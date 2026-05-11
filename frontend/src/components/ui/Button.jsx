@@ -4,12 +4,12 @@ import { twMerge } from 'tailwind-merge';
 const cn = (...inputs) => twMerge(clsx(inputs));
 
 const variants = {
-  primary: 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm',
+  primary: 'bg-brand-blue text-white hover:bg-blue-900 shadow-sm',
   secondary: 'bg-slate-800 text-white hover:bg-slate-900 shadow-sm',
   outline: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
   ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-800',
   danger: 'bg-rose-600 text-white hover:bg-rose-700 shadow-sm',
-  success: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
+  success: 'bg-blue-100 text-blue-700 hover:bg-blue-200',
 };
 
 const sizes = {

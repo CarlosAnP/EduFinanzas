@@ -45,7 +45,7 @@ export default function Simulator() {
   const fmt = (v) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(v);
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
+    <div className="space-y-6 animate-fade-in">
       {/* Back */}
       <button
         onClick={() => navigate('/hub')}
@@ -74,106 +74,113 @@ export default function Simulator() {
         </p>
       </div>
 
-      {/* Inputs */}
-      <Card>
-        <CardContent className="pt-5 space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1.5"><CreditCard size={15} className="text-slate-400" /> Deuda actual</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
-              <input type="number" value={debt} onChange={e => setDebt(Number(e.target.value))}
-                className="w-full pl-10 pr-4 py-3.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-lg font-semibold" />
-            </div>
-            <input type="range" min="100000" max="10000000" step="100000" value={debt}
-              onChange={e => setDebt(Number(e.target.value))}
-              className="w-full mt-2 accent-emerald-600" />
-            <div className="flex justify-between text-[10px] text-slate-400">
-              <span>$100.000</span><span>$10.000.000</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1.5"><BarChart3 size={15} className="text-slate-400" /> Tasa E.M. (%)</label>
-              <input type="number" step="0.1" value={rate} onChange={e => setRate(Number(e.target.value))}
-                className="w-full px-4 py-3.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-semibold" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1.5"><Banknote size={15} className="text-slate-400" /> Cuota mensual</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-                <input type="number" value={payment} onChange={e => setPayment(Number(e.target.value))}
-                  className="w-full pl-8 pr-4 py-3.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-semibold" />
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Left Column: Inputs */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardContent className="pt-5 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1.5"><CreditCard size={15} className="text-slate-400" /> Deuda actual</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                  <input type="number" value={debt} onChange={e => setDebt(Number(e.target.value))}
+                    className="w-full pl-10 pr-4 py-3.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-semibold" />
+                </div>
+                <input type="range" min="100000" max="10000000" step="100000" value={debt}
+                  onChange={e => setDebt(Number(e.target.value))}
+                  className="w-full mt-2 accent-blue-600" />
+                <div className="flex justify-between text-[10px] text-slate-400">
+                  <span>$100.000</span><span>$10.000.000</span>
+                </div>
               </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1.5"><BarChart3 size={15} className="text-slate-400" /> Tasa E.M. (%)</label>
+                <input type="number" step="0.1" value={rate} onChange={e => setRate(Number(e.target.value))}
+                  className="w-full px-4 py-3.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-semibold" />
+              </div>
 
-      {/* Results */}
-      <Card className="bg-gradient-to-br from-slate-800 to-slate-900 text-white border-slate-700 overflow-hidden">
-        <CardContent className="pt-6 pb-6">
-          <h3 className="font-bold text-lg mb-5 flex items-center gap-2 border-b border-slate-700 pb-3">
-            <TrendingDown size={20} className="text-rose-400" />
-            Impacto Real de tu Deuda
-          </h3>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-1.5"><Banknote size={15} className="text-slate-400" /> Cuota mensual</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                  <input type="number" value={payment} onChange={e => setPayment(Number(e.target.value))}
+                    className="w-full pl-8 pr-4 py-3.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-semibold" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          {results.infinite ? (
-            <div className="space-y-4">
-              <div className="p-5 bg-rose-500/20 rounded-xl border border-rose-500/30 text-center">
-                <AlertTriangle size={36} className="text-rose-400 mx-auto mb-3" />
-                <h4 className="font-bold text-rose-300 text-lg flex items-center justify-center gap-2"><AlertTriangle size={20} /> Deuda Infinita</h4>
-                <p className="text-rose-200 text-sm mt-2 leading-relaxed">
-                  Tu cuota mensual ({fmt(payment)}) no alcanza a cubrir los intereses mensuales ({fmt(Math.round(debt * rate / 100))}).
-                  La deuda crecerá indefinidamente.
-                </p>
-              </div>
-              <div className="bg-slate-700/50 rounded-xl p-4 text-center">
-                <p className="text-slate-300 text-sm">
-                  Necesitas pagar al menos <span className="font-bold text-emerald-400">{fmt(Math.ceil(debt * rate / 100) + 1000)}</span> mensuales para empezar a reducir la deuda.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-700/50 rounded-xl p-4 text-center">
-                  <Clock size={20} className="text-blue-400 mx-auto mb-2" />
-                  <p className="text-2xl font-bold">{results.years > 0 ? `${results.years}a ${results.remainingMonths}m` : `${results.months} meses`}</p>
-                  <p className="text-slate-400 text-xs mt-1">Tiempo para pagar</p>
-                </div>
-                <div className="bg-slate-700/50 rounded-xl p-4 text-center">
-                  <DollarSign size={20} className="text-rose-400 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-rose-400">{fmt(results.totalInterest)}</p>
-                  <p className="text-slate-400 text-xs mt-1">Solo en intereses</p>
-                </div>
-              </div>
-              <div className="bg-slate-700/50 rounded-xl p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-slate-300 text-sm">Total que terminas pagando:</span>
-                  <span className="font-bold text-xl">{fmt(results.totalPaid)}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-300 text-sm">Pagas de más:</span>
-                  <Badge variant="danger" className="text-sm px-3 py-1">
-                    +{Math.round((results.totalInterest / debt) * 100)}% del valor original
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          {/* Tips moved here for better balance in 2-column layout */}
+          <Card className="p-5 bg-blue-50 border-blue-200">
+            <h4 className="font-bold text-blue-800 text-sm mb-2 flex items-center gap-1.5"><Lightbulb size={16} className="text-blue-600" /> Consejos Rápidos</h4>
+            <ul className="space-y-1.5 text-blue-700 text-[11px]">
+              <li>• Paga siempre más del mínimo.</li>
+              <li>• Prioriza deudas con tasas altas.</li>
+              <li>• Evita nuevas compras a crédito.</li>
+            </ul>
+          </Card>
+        </div>
 
-      {/* Tips */}
-      <Card className="p-5 bg-emerald-50 border-emerald-200">
-        <h4 className="font-bold text-emerald-800 text-sm mb-2 flex items-center gap-1.5"><Lightbulb size={16} className="text-emerald-600" /> Consejos para reducir tu deuda</h4>
-        <ul className="space-y-1.5 text-emerald-700 text-xs">
-          <li>• Paga siempre más del mínimo, cada peso extra va directo al capital.</li>
-          <li>• Prioriza la deuda con la tasa más alta (método avalancha).</li>
-          <li>• Considera consolidar deudas si tienes varias tarjetas.</li>
-          <li>• Evita nuevas compras a crédito mientras pagas la deuda actual.</li>
-        </ul>
-      </Card>
+        {/* Right Column: Results */}
+        <div className="lg:col-span-3 space-y-6">
+          <Card className="bg-gradient-to-br from-slate-800 to-slate-900 text-white border-slate-700 overflow-hidden h-full">
+            <CardContent className="pt-6 pb-6 h-full flex flex-col">
+              <h3 className="font-bold text-lg mb-5 flex items-center gap-2 border-b border-slate-700 pb-3">
+                <TrendingDown size={20} className="text-rose-400" />
+                Impacto Real de tu Deuda
+              </h3>
+
+              {results.infinite ? (
+                <div className="space-y-4 flex-1 flex flex-col justify-center">
+                  <div className="p-5 bg-rose-500/20 rounded-xl border border-rose-500/30 text-center">
+                    <AlertTriangle size={36} className="text-rose-400 mx-auto mb-3" />
+                    <h4 className="font-bold text-rose-300 text-lg flex items-center justify-center gap-2">Deuda Infinita</h4>
+                    <p className="text-rose-200 text-sm mt-2 leading-relaxed">
+                      Tu cuota ({fmt(payment)}) no cubre los intereses ({fmt(Math.round(debt * rate / 100))}).
+                    </p>
+                  </div>
+                  <div className="bg-slate-700/50 rounded-xl p-4 text-center">
+                    <p className="text-slate-300 text-sm">
+                      Paga al menos <span className="font-bold text-blue-400">{fmt(Math.ceil(debt * rate / 100) + 1000)}</span> para bajar la deuda.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6 flex-1 flex flex-col justify-center">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-slate-700/50 rounded-xl p-6 text-center">
+                      <Clock size={24} className="text-blue-400 mx-auto mb-3" />
+                      <p className="text-3xl font-bold">{results.years > 0 ? `${results.years}a ${results.remainingMonths}m` : `${results.months}m`}</p>
+                      <p className="text-slate-400 text-xs mt-1 italic">Tiempo total</p>
+                    </div>
+                    <div className="bg-slate-700/50 rounded-xl p-6 text-center border border-rose-500/20">
+                      <DollarSign size={24} className="text-rose-400 mx-auto mb-3" />
+                      <p className="text-3xl font-bold text-rose-400">{fmt(results.totalInterest)}</p>
+                      <p className="text-slate-400 text-xs mt-1 italic">Intereses totales</p>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-slate-700/50 rounded-2xl p-6 border border-slate-600">
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-slate-300 text-sm">Total a pagar:</span>
+                      <span className="font-bold text-2xl text-brand-yellow">{fmt(results.totalPaid)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-300 text-sm">Costo financiero:</span>
+                      <Badge variant="danger" className="text-sm px-4 py-1.5">
+                        +{Math.round((results.totalInterest / debt) * 100)}% extra
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
     </div>
   );
 }

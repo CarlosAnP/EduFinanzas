@@ -3,9 +3,10 @@ import { Home, Wallet, BookOpen, LogOut, TrendingUp, Flame, Star } from 'lucide-
 import { currentUser } from '../../data/mockData';
 
 const navItems = [
-  { to: '/', icon: Home, label: 'Inicio' },
-  { to: '/expenses', icon: Wallet, label: 'Gestión' },
-  { to: '/hub', icon: BookOpen, label: 'Aprende' },
+  { to: '/app', icon: Home, label: 'Inicio' },
+  { to: '/app/expenses', icon: Wallet, label: 'Gestión' },
+  { to: '/app/hub', icon: BookOpen, label: 'Aprende' },
+  { to: '/app/simulator', icon: Flame, label: 'Simulador' },
 ];
 
 export default function MainLayout() {
@@ -17,7 +18,7 @@ export default function MainLayout() {
       <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col fixed h-full z-30">
         <div className="p-6 pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 bg-brand-blue rounded-xl flex items-center justify-center shadow-md">
               <TrendingUp size={20} className="text-white" />
             </div>
             <div>
@@ -31,7 +32,7 @@ export default function MainLayout() {
         <div className="px-4 py-4">
           <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-3 border border-slate-200/60">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-sm">
+              <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-brand-blue font-bold text-sm">
                 {currentUser.firstName[0]}{currentUser.lastName[0]}
               </div>
               <div className="min-w-0">
@@ -58,11 +59,11 @@ export default function MainLayout() {
             <NavLink
               key={to}
               to={to}
-              end={to === '/'}
+              end={to === '/app'}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
                 ${isActive
-                  ? 'bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-100'
+                  ? 'bg-blue-50 text-brand-blue shadow-sm shadow-blue-100'
                   : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                 }`
               }
@@ -85,7 +86,7 @@ export default function MainLayout() {
       {/* Mobile Header */}
       <header className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center">
             <TrendingUp size={16} className="text-white" />
           </div>
           <span className="font-bold text-slate-800">EduFinanzas</span>
@@ -94,7 +95,7 @@ export default function MainLayout() {
           <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
             <Flame size={12} /><span className="font-semibold">{currentUser.streak}</span>
           </div>
-          <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-xs">
+          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-brand-blue font-bold text-xs">
             {currentUser.firstName[0]}
           </div>
         </div>
@@ -110,13 +111,13 @@ export default function MainLayout() {
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 flex justify-around py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.06)]">
         {navItems.map(({ to, icon: Icon, label }) => {
-          const isActive = to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+          const isActive = to === '/app' ? location.pathname === '/app' : location.pathname.startsWith(to);
           return (
             <NavLink
               key={to}
               to={to}
               className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-colors
-                ${isActive ? 'text-emerald-600' : 'text-slate-400'}`}
+                ${isActive ? 'text-brand-blue' : 'text-slate-400'}`}
             >
               <Icon size={22} />
               <span className="text-[10px] font-medium">{label}</span>

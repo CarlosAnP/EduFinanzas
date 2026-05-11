@@ -1,8 +1,8 @@
 const Onboarding = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-emerald-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-50">
       <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-lg">
-        <h1 className="text-2xl font-bold text-teal-700 mb-2">
+        <h1 className="text-2xl font-bold text-blue-700 mb-2">
           ¡Bienvenido a EduFinanzas!
         </h1>
         <p className="text-gray-500 mb-6">

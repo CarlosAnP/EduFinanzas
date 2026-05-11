@@ -1,13 +1,13 @@
-export default function Progress({ value = 0, max = 100, color = 'emerald', size = 'md', showLabel = false, className = '' }) {
+export default function Progress({ value = 0, max = 100, color = 'brand-blue', size = 'md', showLabel = false, className = '' }) {
   const pct = Math.min(Math.round((value / max) * 100), 100);
   const isOver = value > max;
   const heights = { sm: 'h-1.5', md: 'h-2.5', lg: 'h-4' };
   const colors = {
-    emerald: 'bg-emerald-500', blue: 'bg-blue-500', amber: 'bg-amber-500',
+    'brand-blue': 'bg-brand-blue', blue: 'bg-blue-500', amber: 'bg-amber-500',
     rose: 'bg-rose-500', violet: 'bg-violet-500', cyan: 'bg-cyan-500',
     orange: 'bg-orange-500', green: 'bg-green-500', slate: 'bg-slate-500',
   };
-  const barColor = isOver ? 'bg-rose-500' : (colors[color] || colors.emerald);
+  const barColor = isOver ? 'bg-rose-500' : (colors[color] || colors['brand-blue']);
 
   return (
     <div className={className}>

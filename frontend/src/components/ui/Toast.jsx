@@ -10,14 +10,14 @@ export const useToast = () => {
 };
 
 const icons = {
-  success: <CheckCircle size={18} className="text-emerald-500" />,
+  success: <CheckCircle size={18} className="text-blue-500" />,
   error: <AlertCircle size={18} className="text-rose-500" />,
   warning: <AlertTriangle size={18} className="text-amber-500" />,
   info: <Info size={18} className="text-blue-500" />,
 };
 
 const bgColors = {
-  success: 'border-emerald-200 bg-emerald-50',
+  success: 'border-blue-200 bg-blue-50',
   error: 'border-rose-200 bg-rose-50',
   warning: 'border-amber-200 bg-amber-50',
   info: 'border-blue-200 bg-blue-50',

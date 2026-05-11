@@ -41,7 +41,7 @@ export default function Hub() {
           <div><p className="text-lg font-bold text-slate-800">{currentUser.points}</p><p className="text-[11px] text-slate-400">Puntos</p></div>
         </Card>
         <Card className="p-4 flex items-center gap-3">
-          <div className="p-2 bg-emerald-50 rounded-xl border border-emerald-100"><Trophy size={20} className="text-emerald-500" /></div>
+          <div className="p-2 bg-blue-50 rounded-xl border border-blue-100"><Trophy size={20} className="text-blue-500" /></div>
           <div><p className="text-lg font-bold text-slate-800">{completedChallenges.length}</p><p className="text-[11px] text-slate-400">Completados</p></div>
         </Card>
       </div>
@@ -78,10 +78,10 @@ export default function Hub() {
         </div>
         <div className="space-y-3">
           {activeChallenges.map(ch => (
-            <Card key={ch.id} className="p-4 border-l-4 border-l-emerald-500" hover>
+            <Card key={ch.id} className="p-4 border-l-4 border-l-blue-500" hover>
               <div className="flex items-start gap-4">
-                <div className="p-2.5 bg-emerald-50 rounded-full shrink-0">
-                  <CheckCircle size={22} className="text-emerald-500" />
+                <div className="p-2.5 bg-blue-50 rounded-full shrink-0">
+                  <CheckCircle size={22} className="text-blue-500" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -96,7 +96,7 @@ export default function Hub() {
                     </div>
                     <div className="flex gap-1">
                       {Array.from({ length: ch.total }).map((_, i) => (
-                        <div key={i} className={`h-2 flex-1 rounded-full ${i < ch.progress ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+                        <div key={i} className={`h-2 flex-1 rounded-full ${i < ch.progress ? 'bg-blue-500' : 'bg-slate-200'}`} />
                       ))}
                     </div>
                   </div>
@@ -141,13 +141,13 @@ export default function Hub() {
             <Trophy size={18} className="text-amber-500" /> Completados
           </h2>
           {completedChallenges.map(ch => (
-            <Card key={ch.id} className="p-4 bg-emerald-50/50 border-emerald-200 flex items-center gap-4">
-              <div className="p-2.5 bg-emerald-100 rounded-full">
-                <CheckCircle size={20} className="text-emerald-600" />
+            <Card key={ch.id} className="p-4 bg-blue-50/50 border-blue-200 flex items-center gap-4">
+              <div className="p-2.5 bg-blue-100 rounded-full">
+                <CheckCircle size={20} className="text-blue-600" />
               </div>
               <div className="flex-1">
-                <h4 className="font-bold text-emerald-800 text-sm">{ch.title}</h4>
-                <p className="text-emerald-600 text-xs">¡Completado! +{ch.rewardPoints} puntos ganados</p>
+                <h4 className="font-bold text-blue-800 text-sm">{ch.title}</h4>
+                <p className="text-blue-600 text-xs">¡Completado! +{ch.rewardPoints} puntos ganados</p>
               </div>
               <Badge variant="success">✓ Hecho</Badge>
             </Card>

@@ -89,7 +89,7 @@ export default function Expenses() {
             <input
               type="text" placeholder="Buscar transacciones..." value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             />
           </div>
 
@@ -133,7 +133,7 @@ export default function Expenses() {
                               </TableCell>
                               <TableCell className="hidden sm:table-cell text-slate-500 text-xs">{formatDate(tx.date)}</TableCell>
                               <TableCell className="text-right">
-                                <span className={`font-bold text-sm flex items-center justify-end gap-1 ${isIncome ? 'text-emerald-600' : 'text-slate-800'}`}>
+                                <span className={`font-bold text-sm flex items-center justify-end gap-1 ${isIncome ? 'text-blue-600' : 'text-slate-800'}`}>
                                   {isIncome ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
                                   {formatCurrency(tx.amount)}
                                 </span>
@@ -155,7 +155,7 @@ export default function Expenses() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-slate-700 flex items-center gap-2">
-            <Target size={18} className="text-emerald-600" /> Metas de Ahorro
+            <Target size={18} className="text-blue-600" /> Metas de Ahorro
           </h2>
           <Button variant="outline" size="sm" icon={<Plus size={14} />} onClick={() => setShowGoalModal(true)}>
             Nueva Meta
@@ -168,8 +168,8 @@ export default function Expenses() {
               <Card key={goal.id} className="p-5" hover>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 bg-emerald-100 rounded-xl">
-                      <Target size={18} className="text-emerald-600" />
+                    <div className="p-2 bg-blue-100 rounded-xl">
+                      <Target size={18} className="text-blue-600" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-800 text-sm">{goal.title}</h3>
@@ -178,7 +178,7 @@ export default function Expenses() {
                   </div>
                   <Badge variant={pct >= 80 ? 'success' : pct >= 40 ? 'warning' : 'info'}>{pct}%</Badge>
                 </div>
-                <Progress value={goal.currentAmount} max={goal.targetAmount} color="emerald" size="md" />
+                <Progress value={goal.currentAmount} max={goal.targetAmount} color="blue" size="md" />
                 <div className="flex justify-between text-xs mt-2 text-slate-500">
                   <span>Ahorrado: {formatCurrency(goal.currentAmount)}</span>
                   <span>Meta: {formatCurrency(goal.targetAmount)}</span>
@@ -200,7 +200,7 @@ export default function Expenses() {
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre de la meta</label>
               <input type="text" placeholder="Ej: Viaje de fin de año" value={newGoal.title}
                 onChange={e => setNewGoal(p => ({ ...p, title: e.target.value }))}
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Monto objetivo</label>
@@ -208,14 +208,14 @@ export default function Expenses() {
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
                 <input type="number" placeholder="0" value={newGoal.targetAmount}
                   onChange={e => setNewGoal(p => ({ ...p, targetAmount: e.target.value }))}
-                  className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-lg font-semibold" />
+                  className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-semibold" />
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Descripción (opcional)</label>
               <input type="text" placeholder="¿Para qué estás ahorrando?" value={newGoal.description}
                 onChange={e => setNewGoal(p => ({ ...p, description: e.target.value }))}
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
           </div>
         </ModalBody>
@@ -250,7 +250,7 @@ function AddTransactionModal({ isOpen, onClose }) {
             {['gasto', 'ingreso'].map(t => (
               <button key={t} onClick={() => setTx(p => ({ ...p, type: t }))}
                 className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition cursor-pointer flex items-center justify-center gap-2
-                  ${tx.type === t ? (t === 'gasto' ? 'bg-rose-500 text-white shadow' : 'bg-emerald-500 text-white shadow') : 'text-slate-500'}`}>
+                  ${tx.type === t ? (t === 'gasto' ? 'bg-rose-500 text-white shadow' : 'bg-blue-500 text-white shadow') : 'text-slate-500'}`}>
                 {t === 'gasto' ? <><TrendingDown size={16} /> Gasto</> : <><TrendingUp size={16} /> Ingreso</>}
               </button>
             ))}
@@ -261,13 +261,13 @@ function AddTransactionModal({ isOpen, onClose }) {
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
               <input type="number" placeholder="0" value={tx.amount}
                 onChange={e => setTx(p => ({ ...p, amount: e.target.value }))}
-                className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-lg font-semibold" />
+                className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-semibold" />
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Categoría</label>
             <select value={tx.category} onChange={e => setTx(p => ({ ...p, category: e.target.value }))}
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm">
+              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm">
               {Object.entries(iconMap).map(([k, v]) => (
                 <option key={k} value={k}>{v.label}</option>
               ))}
@@ -277,13 +277,13 @@ function AddTransactionModal({ isOpen, onClose }) {
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
             <input type="text" placeholder="Ej: Almuerzo cafetería" value={tx.description}
               onChange={e => setTx(p => ({ ...p, description: e.target.value }))}
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha</label>
             <input type="date" value={tx.date}
               onChange={e => setTx(p => ({ ...p, date: e.target.value }))}
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
           </div>
         </div>
       </ModalBody>

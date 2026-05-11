@@ -61,7 +61,7 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <StatCard label="Balance" value={formatCurrency(financialSummary.balance)} icon={<DollarSign size={20} />} color="emerald" trend="+12%" trendUp />
+        <StatCard label="Balance" value={formatCurrency(financialSummary.balance)} icon={<DollarSign size={20} />} color="blue" trend="+12%" trendUp />
         <StatCard label="Ingresos" value={formatCurrency(financialSummary.totalIncome)} icon={<ArrowUpRight size={20} />} color="blue" trend="+8%" trendUp />
         <StatCard label="Gastos" value={formatCurrency(financialSummary.totalExpenses)} icon={<ArrowDownRight size={20} />} color="rose" trend="-5%" trendUp={false} />
         <StatCard label="Ahorro" value={`${financialSummary.savingsRate}%`} icon={<PiggyBank size={20} />} color="violet" trend="+3%" trendUp />
@@ -97,7 +97,7 @@ export default function Dashboard() {
               <p className="text-3xl font-bold text-slate-800">{formatCurrency(financialSummary.balance)}</p>
               <p className="text-xs text-slate-400 mt-1">disponible de {formatCurrency(financialSummary.monthlyBudget)}</p>
             </div>
-            <Progress value={financialSummary.budgetUsed} max={financialSummary.monthlyBudget} color={budgetPct > 90 ? 'rose' : 'emerald'} size="lg" />
+            <Progress value={financialSummary.budgetUsed} max={financialSummary.monthlyBudget} color={budgetPct > 90 ? 'rose' : 'blue'} size="lg" />
             <div className="space-y-2 pt-2">
               {categories.slice(0, 4).map(cat => {
                 const catInfo = getCategoryInfo(cat.id);
@@ -123,7 +123,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <Card className="lg:col-span-3">
           <CardHeader title="Movimientos Recientes" action={
-            <button className="text-emerald-600 text-xs font-semibold hover:underline cursor-pointer">Ver todos</button>
+            <button className="text-blue-600 text-xs font-semibold hover:underline cursor-pointer">Ver todos</button>
           } />
           <CardContent className="space-y-2">
             {transactions.slice(0, 6).map(tx => {
@@ -138,7 +138,7 @@ export default function Dashboard() {
                       <p className="text-[11px] text-slate-400">{catInfo.label} · {formatDate(tx.date)}</p>
                     </div>
                   </div>
-                  <span className={`font-bold text-sm ${isIncome ? 'text-emerald-600' : 'text-slate-800'}`}>
+                  <span className={`font-bold text-sm ${isIncome ? 'text-blue-600' : 'text-slate-800'}`}>
                     {isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
                   </span>
                 </div>
@@ -156,12 +156,12 @@ export default function Dashboard() {
                 <div key={goal.id} className="space-y-2 p-3 rounded-xl bg-slate-50/80 border border-slate-100">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Target size={16} className="text-emerald-600" />
+                      <Target size={16} className="text-blue-600" />
                       <span className="font-medium text-slate-700 text-sm">{goal.title}</span>
                     </div>
-                    <span className="text-xs font-bold text-emerald-600">{pct}%</span>
+                    <span className="text-xs font-bold text-blue-600">{pct}%</span>
                   </div>
-                  <Progress value={goal.currentAmount} max={goal.targetAmount} color="emerald" size="sm" />
+                  <Progress value={goal.currentAmount} max={goal.targetAmount} color="blue" size="sm" />
                   <div className="flex justify-between text-[11px] text-slate-400">
                     <span>{formatCurrency(goal.currentAmount)}</span>
                     <span>{formatCurrency(goal.targetAmount)}</span>
@@ -181,7 +181,7 @@ export default function Dashboard() {
               {['gasto', 'ingreso'].map(t => (
                 <button key={t} onClick={() => setNewTx(p => ({ ...p, type: t }))}
                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition cursor-pointer flex items-center justify-center gap-2
-                    ${newTx.type === t ? (t === 'gasto' ? 'bg-rose-500 text-white shadow' : 'bg-emerald-500 text-white shadow') : 'text-slate-500'}`}>
+                    ${newTx.type === t ? (t === 'gasto' ? 'bg-rose-500 text-white shadow' : 'bg-blue-500 text-white shadow') : 'text-slate-500'}`}>
                   {t === 'gasto' ? <><TrendingDown size={16} /> Gasto</> : <><TrendingUp size={16} /> Ingreso</>}
                 </button>
               ))}
@@ -192,13 +192,13 @@ export default function Dashboard() {
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
                 <input type="number" placeholder="0" value={newTx.amount}
                   onChange={e => setNewTx(p => ({ ...p, amount: e.target.value }))}
-                  className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-lg font-semibold" />
+                  className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-lg font-semibold" />
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Categoría</label>
               <select value={newTx.category} onChange={e => setNewTx(p => ({ ...p, category: e.target.value }))}
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-sm">
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm">
                 {Object.entries(iconMap).map(([k, v]) => (
                   <option key={k} value={k}>{v.label}</option>
                 ))}
@@ -208,13 +208,13 @@ export default function Dashboard() {
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
               <input type="text" placeholder="Ej: Almuerzo cafetería" value={newTx.description}
                 onChange={e => setNewTx(p => ({ ...p, description: e.target.value }))}
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha</label>
               <input type="date" value={newTx.date}
                 onChange={e => setNewTx(p => ({ ...p, date: e.target.value }))}
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
             </div>
           </div>
         </ModalBody>
@@ -229,12 +229,12 @@ export default function Dashboard() {
 
 function StatCard({ label, value, icon, color, trend, trendUp }) {
   const colors = {
-    emerald: { bg: 'bg-emerald-50', icon: 'text-emerald-600', border: 'border-emerald-100' },
+    blue: { bg: 'bg-blue-50', icon: 'text-blue-600', border: 'border-blue-100' },
     blue: { bg: 'bg-blue-50', icon: 'text-blue-600', border: 'border-blue-100' },
     rose: { bg: 'bg-rose-50', icon: 'text-rose-600', border: 'border-rose-100' },
     violet: { bg: 'bg-violet-50', icon: 'text-violet-600', border: 'border-violet-100' },
   };
-  const c = colors[color] || colors.emerald;
+  const c = colors[color] || colors.blue;
 
   return (
     <Card className="p-4">
@@ -243,7 +243,7 @@ function StatCard({ label, value, icon, color, trend, trendUp }) {
           <span className={c.icon}>{icon}</span>
         </div>
         {trend && (
-          <span className={`text-[11px] font-semibold flex items-center gap-0.5 ${trendUp ? 'text-emerald-600' : 'text-rose-500'}`}>
+          <span className={`text-[11px] font-semibold flex items-center gap-0.5 ${trendUp ? 'text-blue-600' : 'text-rose-500'}`}>
             {trendUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
             {trend}
           </span>

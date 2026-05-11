@@ -5,6 +5,8 @@ import Dashboard from './pages/Dashboard';
 import Expenses from './pages/Expenses';
 import Hub from './pages/Hub';
 import Simulator from './pages/Simulator';
+import LandingPage from './pages/LandingPage';
+import Login from './pages/Login';
 import './index.css';
 
 function App() {
@@ -12,12 +14,20 @@ function App() {
     <ToastProvider>
       <BrowserRouter>
         <Routes>
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/hub" element={<Hub />} />
-            <Route path="/simulator" element={<Simulator />} />
+          {/* Public Landing Page */}
+          <Route path="/" element={<LandingPage />} />
+          
+          {/* Auth */}
+          <Route path="/login" element={<Login />} />
+          
+          {/* App Tools Layout */}
+          <Route path="/app" element={<MainLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="expenses" element={<Expenses />} />
+            <Route path="hub" element={<Hub />} />
+            <Route path="simulator" element={<Simulator />} />
           </Route>
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

@@ -65,7 +65,7 @@ export const challenges = [
 export const guides = [
   { id: 1, title: 'Cómo leer tu extracto bancario', category: 'Básico', readTime: '5 min', color: 'blue' },
   { id: 2, title: 'El peligro del pago mínimo', category: 'Deuda', readTime: '8 min', color: 'rose' },
-  { id: 3, title: 'La regla 50/30/20', category: 'Presupuesto', readTime: '6 min', color: 'emerald' },
+  { id: 3, title: 'La regla 50/30/20', category: 'Presupuesto', readTime: '6 min', color: 'blue' },
   { id: 4, title: 'Cómo empezar a invertir siendo estudiante', category: 'Inversión', readTime: '10 min', color: 'violet' },
   { id: 5, title: 'Tarjetas de crédito: lo bueno y lo malo', category: 'Deuda', readTime: '7 min', color: 'amber' },
   { id: 6, title: 'Apps para controlar tus finanzas', category: 'Herramientas', readTime: '4 min', color: 'cyan' },
