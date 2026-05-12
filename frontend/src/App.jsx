@@ -7,6 +7,7 @@ import Hub from './pages/Hub';
 import Simulator from './pages/Simulator';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
+import NotFound from './pages/NotFound';
 import './index.css';
 
 function App() {
@@ -28,7 +29,8 @@ function App() {
             <Route path="simulator" element={<Simulator />} />
           </Route>
           
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* 404 Page */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </ToastProvider>
