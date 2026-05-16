@@ -91,10 +91,17 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 import dj_database_url
 
+if DEBUG:
+    # Entorno Local
+    default_db_url = 'postgres://postgres:admin@localhost:5432/edufinanzas_db'
+else:
+    # Entorno de Producción (Render)
+    default_db_url = 'postgresql://admin:iGqdUKp2XDnK5K5XLM0HXSN41wwczBzZ@dpg-d849hep9rddc739fqtgg-a/edufinanzas_db'
+
 DATABASES = {
     'default': config(
         'DATABASE_URL',
-        default='postgres://postgres:admin@localhost:5432/edufinanzas_db',
+        default=default_db_url,
         cast=dj_database_url.parse
     )
 }

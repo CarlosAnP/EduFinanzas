@@ -3,7 +3,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     RegisterView, UserProfileView,
     OnboardingProfileView, NotificationListView, ContactMessageCreateView,
-    AdminUserListView, AdminMessageListView
+    AdminUserListView, AdminMessageListView, ping_view
 )
 
 urlpatterns = [
@@ -19,6 +19,7 @@ urlpatterns = [
     
     # Public
     path('contact/', ContactMessageCreateView.as_view(), name='contact_message'),
+    path('ping/', ping_view, name='ping'),
     
     # Admin
     path('admin/users/', AdminUserListView.as_view(), name='admin_users'),

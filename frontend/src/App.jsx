@@ -10,11 +10,22 @@ import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
 import NotFound from './pages/NotFound';
+import { useEffect } from 'react';
+import api from './api/axios';
 import './index.css';
 
 const queryClient = new QueryClient();
 
 function App() {
+  useEffect(() => {
+    // Ping el backend cada 5 minutos (300,000 ms) para mantener el Free Tier de Render despierto
+    const interval = setInterval(() => {
+      api.get('/users/ping/').catch(() => {});
+    }, 300000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
