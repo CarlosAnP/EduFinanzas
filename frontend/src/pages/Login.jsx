@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, ChevronRight, GraduationCap, AlertCircle, User as UserIcon } from 'lucide-react';
 import { useToast } from '../components/ui/Toast';
 import { useMutation } from '@tanstack/react-query';
-import axios from 'axios';
-
-const API_URL = 'http://localhost:8000/api/users/auth';
+import api from '../api/axios';
 
 const Login = () => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -19,7 +17,7 @@ const Login = () => {
 
   const loginMutation = useMutation({
     mutationFn: async (data) => {
-      const response = await axios.post(`${API_URL}/login/`, data);
+      const response = await api.post('/users/auth/login/', data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -35,7 +33,7 @@ const Login = () => {
 
   const registerMutation = useMutation({
     mutationFn: async (data) => {
-      const response = await axios.post(`${API_URL}/register/`, data);
+      const response = await api.post('/users/auth/register/', data);
       return response.data;
     },
     onSuccess: (data) => {
