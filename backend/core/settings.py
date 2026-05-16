@@ -90,13 +90,16 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 import dj_database_url
+import os
 
-if DEBUG:
-    # Entorno Local
-    default_db_url = 'postgres://postgres:admin@localhost:5432/edufinanzas_db'
-else:
+IS_RENDER = os.environ.get('RENDER') == 'true'
+
+if IS_RENDER:
     # Entorno de Producción (Render)
     default_db_url = 'postgresql://admin:iGqdUKp2XDnK5K5XLM0HXSN41wwczBzZ@dpg-d849hep9rddc739fqtgg-a/edufinanzas_db'
+else:
+    # Entorno Local
+    default_db_url = 'postgres://postgres:admin@localhost:5432/edufinanzas_db'
 
 DATABASES = {
     'default': config(
