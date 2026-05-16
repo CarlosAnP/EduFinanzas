@@ -1,6 +1,8 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Home, Wallet, BookOpen, LogOut, TrendingUp, Flame, Star } from 'lucide-react';
-import { currentUser } from '../../data/mockData';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Home, Wallet, BookOpen, LogOut, TrendingUp, Flame, Star, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import api from '../../api/axios';
+import { useEffect } from 'react';
 
 const navItems = [
   { to: '/app', icon: Home, label: 'Inicio' },
@@ -11,6 +13,40 @@ const navItems = [
 
 export default function MainLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const { data: user, isLoading, isError } = useQuery({
+    queryKey: ['userProfile'],
+    queryFn: async () => {
+      const response = await api.get('/users/profile/');
+      return response.data;
+    },
+    retry: 1,
+  });
+
+  useEffect(() => {
+    if (isError || (!isLoading && !user)) {
+      navigate('/login');
+    }
+  }, [isError, isLoading, user, navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    navigate('/login');
+  };
+
+  if (isLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="animate-spin text-brand-blue" size={40} />
+      </div>
+    );
+  }
+
+  // Fallbacks if data is missing
+  const initial1 = user.first_name ? user.first_name[0] : 'U';
+  const initial2 = user.last_name ? user.last_name[0] : '';
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
@@ -33,21 +69,21 @@ export default function MainLayout() {
           <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-3 border border-slate-200/60">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-brand-blue font-bold text-sm">
-                {currentUser.firstName[0]}{currentUser.lastName[0]}
+                {initial1}{initial2}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-700 truncate">{currentUser.firstName}</p>
-                <p className="text-[10px] text-slate-400 truncate">{currentUser.career}</p>
+                <p className="text-sm font-semibold text-slate-700 truncate">{user.first_name || 'Usuario'}</p>
+                <p className="text-[10px] text-slate-400 truncate">{user.career || 'Estudiante'}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 mt-3 pt-2 border-t border-slate-200/60">
               <div className="flex items-center gap-1 text-xs text-amber-600">
                 <Flame size={12} />
-                <span className="font-semibold">{currentUser.streak}d</span>
+                <span className="font-semibold">{user.streak}d</span>
               </div>
               <div className="flex items-center gap-1 text-xs text-violet-600">
                 <Star size={12} />
-                <span className="font-semibold">{currentUser.points} pts</span>
+                <span className="font-semibold">{user.points} pts</span>
               </div>
             </div>
           </div>
@@ -76,7 +112,7 @@ export default function MainLayout() {
 
         {/* Logout */}
         <div className="p-4 border-t border-slate-100">
-          <button className="flex items-center gap-3 px-4 py-2.5 w-full rounded-xl text-sm font-medium text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition cursor-pointer">
+          <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-2.5 w-full rounded-xl text-sm font-medium text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition cursor-pointer">
             <LogOut size={18} />
             <span>Cerrar Sesión</span>
           </button>
@@ -92,11 +128,14 @@ export default function MainLayout() {
           <span className="font-bold text-slate-800">EduFinanzas</span>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={handleLogout} className="text-slate-400 p-1 mr-1">
+            <LogOut size={16} />
+          </button>
           <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-            <Flame size={12} /><span className="font-semibold">{currentUser.streak}</span>
+            <Flame size={12} /><span className="font-semibold">{user.streak}</span>
           </div>
           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-brand-blue font-bold text-xs">
-            {currentUser.firstName[0]}
+            {initial1}
           </div>
         </div>
       </header>
@@ -104,7 +143,7 @@ export default function MainLayout() {
       {/* Main Content */}
       <main className="flex-1 md:ml-64 pb-20 md:pb-8">
         <div className="p-4 md:p-8">
-          <Outlet />
+          <Outlet context={{ user }} />
         </div>
       </main>
 

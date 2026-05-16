@@ -104,3 +104,35 @@ class Goal(models.Model):
         if self.target_amount == 0:
             return 0
         return min(round((self.current_amount / self.target_amount) * 100, 1), 100)
+
+
+class CategoryBudget(models.Model):
+    """
+    Modelo para establecer el presupuesto mensual por categoría.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='category_budgets',
+        verbose_name='usuario'
+    )
+    category = models.CharField(
+        'categoría',
+        max_length=20,
+        choices=Transaction.CATEGORY_CHOICES
+    )
+    budget = models.DecimalField(
+        'presupuesto',
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+    color = models.CharField('color', max_length=20, default='blue')
+
+    class Meta:
+        verbose_name = 'Presupuesto de Categoría'
+        verbose_name_plural = 'Presupuestos de Categorías'
+        unique_together = ('user', 'category')
+
+    def __str__(self):
+        return f'{self.get_category_display()} - {self.budget} ({self.user.email})'

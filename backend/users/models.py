@@ -54,6 +54,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     university = models.CharField('universidad', max_length=200, blank=True)
     career = models.CharField('carrera', max_length=200, blank=True)
     semester = models.PositiveSmallIntegerField('semestre', null=True, blank=True)
+    streak = models.PositiveIntegerField('racha de días', default=0)
+    points = models.PositiveIntegerField('puntos', default=0)
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -128,3 +130,48 @@ class OnboardingProfile(models.Model):
 
     def __str__(self):
         return f'Onboarding de {self.user.email}'
+
+
+class Notification(models.Model):
+    """
+    Modelo para almacenar notificaciones del usuario.
+    """
+    NOTIFICATION_TYPES = [
+        ('warning', 'Advertencia'),
+        ('info', 'Información'),
+        ('success', 'Éxito'),
+        ('error', 'Error'),
+    ]
+
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='notifications',
+        verbose_name='usuario'
+    )
+    type = models.CharField('tipo', max_length=10, choices=NOTIFICATION_TYPES, default='info')
+    title = models.CharField('título', max_length=200)
+    message = models.TextField('mensaje')
+    date = models.DateTimeField('fecha', default=timezone.now)
+    is_read = models.BooleanField('leída', default=False)
+
+    class Meta:
+        verbose_name = 'Notificación'
+        verbose_name_plural = 'Notificaciones'
+        ordering = ['-date']
+
+    def __str__(self):
+        return f'{self.title} ({self.user.email})'
+
+class ContactMessage(models.Model):
+    name = models.CharField('nombre', max_length=200)
+    email = models.EmailField('correo electrónico')
+    message = models.TextField('mensaje')
+    created_at = models.DateTimeField('fecha de envío', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Mensaje de Contacto'
+        verbose_name_plural = 'Mensajes de Contacto'
+
+    def __str__(self):
+        return f'Mensaje de {self.name} ({self.email})'

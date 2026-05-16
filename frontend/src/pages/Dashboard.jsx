@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '../api/axios';
 import {
   TrendingUp, TrendingDown, DollarSign, PiggyBank, AlertCircle,
-  ArrowUpRight, ArrowDownRight, Plus, Target, Hand, CreditCard
+  ArrowUpRight, ArrowDownRight, Plus, Target, Hand, Loader2, Shield
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
@@ -10,34 +13,85 @@ import Button from '../components/ui/Button';
 import Progress from '../components/ui/Progress';
 import Modal, { ModalBody, ModalFooter } from '../components/ui/Modal';
 import { useToast } from '../components/ui/Toast';
+import AdminModal from '../components/admin/AdminModal';
 import { getCategoryInfo, CategoryIcon } from '../components/CategoryIcons';
 import iconMap from '../components/CategoryIcons';
-import {
-  currentUser, financialSummary, transactions, categories,
-  savingsGoals, notifications, monthlyData, formatCurrency, formatDate
-} from '../data/mockData';
+import { formatCurrency, formatDate } from '../data/mockData';
 
 export default function Dashboard() {
+  const { user } = useOutletContext();
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newTx, setNewTx] = useState({ type: 'gasto', amount: '', category: 'alimentacion', description: '', date: new Date().toISOString().split('T')[0] });
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [newTx, setNewTx] = useState({ transaction_type: 'gasto', amount: '', category: 'alimentacion', description: '', date: new Date().toISOString().split('T')[0] });
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: dashboardData, isLoading } = useQuery({
+    queryKey: ['dashboardSummary'],
+    queryFn: async () => {
+      const response = await api.get('/finance/dashboard/');
+      return response.data;
+    }
+  });
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const response = await api.get('/users/notifications/');
+      return response.data;
+    }
+  });
+
+  const txMutation = useMutation({
+    mutationFn: async (data) => {
+      const response = await api.post('/finance/transactions/', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      toast({ title: '¡Registrado!', description: 'Transacción guardada exitosamente.', variant: 'success' });
+      setShowAddModal(false);
+      setNewTx({ transaction_type: 'gasto', amount: '', category: 'alimentacion', description: '', date: new Date().toISOString().split('T')[0] });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'No se pudo guardar la transacción.', variant: 'error' });
+    }
+  });
 
   const handleSave = () => {
     if (!newTx.amount) return toast({ title: 'Error', description: 'Ingresa un monto válido.', variant: 'error' });
-    toast({ title: '¡Registrado!', description: `${newTx.type === 'ingreso' ? 'Ingreso' : 'Gasto'} de ${formatCurrency(Number(newTx.amount))} guardado.`, variant: 'success' });
-    setShowAddModal(false);
-    setNewTx({ type: 'gasto', amount: '', category: 'alimentacion', description: '', date: new Date().toISOString().split('T')[0] });
+    txMutation.mutate(newTx);
   };
 
-  const budgetPct = Math.round((financialSummary.budgetUsed / financialSummary.monthlyBudget) * 100);
+  if (isLoading || !dashboardData) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <Loader2 className="animate-spin text-brand-blue" size={40} />
+      </div>
+    );
+  }
+
+  const { financialSummary, recentTransactions, savingsGoals, categories, monthlyData } = dashboardData;
+  const budgetPct = financialSummary.monthlyBudget > 0 
+    ? Math.round((financialSummary.budgetUsed / financialSummary.monthlyBudget) * 100) 
+    : 0;
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Welcome */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-2">
-            Hola, {currentUser.firstName} <Hand size={28} className="text-amber-400" />
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-2 group">
+            Hola, {user?.first_name || 'Estudiante'} <Hand size={28} className="text-amber-400" />
+            {user?.is_staff && (
+              <button 
+                onClick={() => setShowAdminModal(true)}
+                className="ml-2 opacity-40 hover:opacity-100 transition-opacity px-2 py-1.5 bg-slate-800 text-white rounded-lg text-xs flex items-center gap-1.5 cursor-pointer shadow-md"
+                title="Panel de Administración"
+              >
+                <Shield size={14} /> Admin
+              </button>
+            )}
           </h1>
           <p className="text-slate-500 text-sm mt-1">
             {new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -108,8 +162,11 @@ export default function Dashboard() {
                       <CatIcon size={12} className={catInfo.color} />
                       {cat.name}
                     </span>
-                    <span className={`font-semibold ${cat.spent > cat.budget ? 'text-rose-600' : 'text-slate-700'}`}>
+                    <span className={`font-semibold flex items-center gap-1 ${cat.spent > cat.budget && cat.budget > 0 ? 'text-rose-600' : 'text-slate-700'}`}>
                       {formatCurrency(cat.spent)}
+                      {cat.budget > 0 && cat.spent < cat.budget && (
+                        <span className="text-[10px] font-normal text-emerald-500 hidden sm:inline">(Faltan {formatCurrency(cat.budget - cat.spent)})</span>
+                      )}
                     </span>
                   </div>
                 );
@@ -126,9 +183,9 @@ export default function Dashboard() {
             <button className="text-blue-600 text-xs font-semibold hover:underline cursor-pointer">Ver todos</button>
           } />
           <CardContent className="space-y-2">
-            {transactions.slice(0, 6).map(tx => {
+            {recentTransactions.map(tx => {
               const catInfo = getCategoryInfo(tx.category);
-              const isIncome = tx.type === 'ingreso';
+              const isIncome = tx.transaction_type === 'ingreso';
               return (
                 <div key={tx.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition group">
                   <div className="flex items-center gap-3">
@@ -144,6 +201,9 @@ export default function Dashboard() {
                 </div>
               );
             })}
+            {recentTransactions.length === 0 && (
+              <p className="text-center text-slate-400 text-sm py-4">No hay transacciones recientes.</p>
+            )}
           </CardContent>
         </Card>
 
@@ -151,7 +211,7 @@ export default function Dashboard() {
           <CardHeader title="Metas de Ahorro" action={<Badge variant="info">{savingsGoals.length} activas</Badge>} />
           <CardContent className="space-y-4">
             {savingsGoals.map(goal => {
-              const pct = Math.round((goal.currentAmount / goal.targetAmount) * 100);
+              const pct = Math.round((goal.current_amount / goal.target_amount) * 100);
               return (
                 <div key={goal.id} className="space-y-2 p-3 rounded-xl bg-slate-50/80 border border-slate-100">
                   <div className="flex items-center justify-between">
@@ -161,14 +221,20 @@ export default function Dashboard() {
                     </div>
                     <span className="text-xs font-bold text-blue-600">{pct}%</span>
                   </div>
-                  <Progress value={goal.currentAmount} max={goal.targetAmount} color="blue" size="sm" />
+                  <Progress value={goal.current_amount} max={goal.target_amount} color="blue" size="sm" />
                   <div className="flex justify-between text-[11px] text-slate-400">
-                    <span>{formatCurrency(goal.currentAmount)}</span>
-                    <span>{formatCurrency(goal.targetAmount)}</span>
+                    <span>{formatCurrency(goal.current_amount)}</span>
+                    <span>{formatCurrency(goal.target_amount)}</span>
                   </div>
+                  {goal.target_amount > goal.current_amount && (
+                    <p className="text-[10px] font-medium text-blue-600 mt-1 text-right">Faltan {formatCurrency(goal.target_amount - goal.current_amount)}</p>
+                  )}
                 </div>
               );
             })}
+            {savingsGoals.length === 0 && (
+              <p className="text-center text-slate-400 text-sm py-4">No tienes metas de ahorro activas.</p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -179,9 +245,9 @@ export default function Dashboard() {
           <div className="space-y-4">
             <div className="flex bg-slate-100 p-1 rounded-xl">
               {['gasto', 'ingreso'].map(t => (
-                <button key={t} onClick={() => setNewTx(p => ({ ...p, type: t }))}
+                <button key={t} onClick={() => setNewTx(p => ({ ...p, transaction_type: t }))}
                   className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition cursor-pointer flex items-center justify-center gap-2
-                    ${newTx.type === t ? (t === 'gasto' ? 'bg-rose-500 text-white shadow' : 'bg-blue-500 text-white shadow') : 'text-slate-500'}`}>
+                    ${newTx.transaction_type === t ? (t === 'gasto' ? 'bg-rose-500 text-white shadow' : 'bg-blue-500 text-white shadow') : 'text-slate-500'}`}>
                   {t === 'gasto' ? <><TrendingDown size={16} /> Gasto</> : <><TrendingUp size={16} /> Ingreso</>}
                 </button>
               ))}
@@ -220,16 +286,19 @@ export default function Dashboard() {
         </ModalBody>
         <ModalFooter>
           <Button variant="outline" onClick={() => setShowAddModal(false)}>Cancelar</Button>
-          <Button onClick={handleSave}>Guardar Transacción</Button>
+          <Button onClick={handleSave} disabled={txMutation.isPending}>
+            {txMutation.isPending ? 'Guardando...' : 'Guardar Transacción'}
+          </Button>
         </ModalFooter>
       </Modal>
+
+      <AdminModal isOpen={showAdminModal} onClose={() => setShowAdminModal(false)} />
     </div>
   );
 }
 
 function StatCard({ label, value, icon, color, trend, trendUp }) {
   const colors = {
-    blue: { bg: 'bg-blue-50', icon: 'text-blue-600', border: 'border-blue-100' },
     blue: { bg: 'bg-blue-50', icon: 'text-blue-600', border: 'border-blue-100' },
     rose: { bg: 'bg-rose-50', icon: 'text-rose-600', border: 'border-rose-100' },
     violet: { bg: 'bg-violet-50', icon: 'text-violet-600', border: 'border-violet-100' },

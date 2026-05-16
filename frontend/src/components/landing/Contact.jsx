@@ -1,7 +1,24 @@
-import React from 'react';
-import { Mail, Share2, Globe, Phone, Send, MessageCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Mail, Share2, Globe, Phone, Send, MessageCircle, CheckCircle2 } from 'lucide-react';
+import api from '../../api/axios';
 
 const Contact = () => {
+  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const [status, setStatus] = useState('idle'); // idle, loading, success, error
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus('loading');
+    try {
+      await api.post('/users/contact/', formData);
+      setStatus('success');
+      setFormData({ name: '', email: '', message: '' });
+      setTimeout(() => setStatus('idle'), 5000);
+    } catch (error) {
+      console.error(error);
+      setStatus('error');
+    }
+  };
   return (
     <section id="contact" className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -13,9 +30,9 @@ const Contact = () => {
 
           <div className="grid lg:grid-cols-2 gap-0">
             {/* Info Side */}
-            <div className="p-12 lg:p-16 text-white">
+            <div className="p-8 md:p-12 lg:p-16 text-white">
               <h2 className="text-sm font-bold text-brand-yellow uppercase tracking-widest mb-3">Contacto</h2>
-              <h3 className="text-4xl font-bold mb-8">¿Tienes alguna duda?<br/>Escríbenos.</h3>
+              <h3 className="text-3xl md:text-4xl font-bold mb-8">¿Tienes alguna duda?<br/>Escríbenos.</h3>
               
               <div className="space-y-8 mb-12">
                 <div className="flex items-center gap-6">
@@ -53,36 +70,61 @@ const Contact = () => {
             </div>
 
             {/* Form Side */}
-            <div className="bg-white p-12 lg:p-16">
-              <form className="space-y-6">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2 uppercase">Nombre Completo</label>
-                  <input 
-                    type="text" 
-                    className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:border-brand-blue focus:bg-white outline-none transition-all"
-                    placeholder="Tu nombre aquí"
-                  />
+            <div className="bg-white p-8 md:p-12 lg:p-16 relative">
+              {status === 'success' ? (
+                <div className="h-full flex flex-col items-center justify-center text-center animate-fade-in py-12">
+                  <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-6">
+                    <CheckCircle2 size={40} />
+                  </div>
+                  <h4 className="text-2xl font-bold text-slate-800 mb-2">¡Mensaje Enviado!</h4>
+                  <p className="text-slate-500">Nos pondremos en contacto contigo lo más pronto posible.</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2 uppercase">Correo Electrónico</label>
-                  <input 
-                    type="email" 
-                    className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:border-brand-blue focus:bg-white outline-none transition-all"
-                    placeholder="email@universidad.edu"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2 uppercase">Mensaje</label>
-                  <textarea 
-                    rows="4"
-                    className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:border-brand-blue focus:bg-white outline-none transition-all resize-none"
-                    placeholder="¿En qué podemos ayudarte?"
-                  ></textarea>
-                </div>
-                <button className="w-full bg-brand-blue text-white py-5 rounded-2xl font-bold text-lg hover:bg-blue-900 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3">
-                  Enviar Mensaje <Send size={20} />
-                </button>
-              </form>
+              ) : (
+                <form className="space-y-6" onSubmit={handleSubmit}>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase">Nombre Completo</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={formData.name}
+                      onChange={e => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:border-brand-blue focus:bg-white outline-none transition-all"
+                      placeholder="Tu nombre aquí"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase">Correo Electrónico</label>
+                    <input 
+                      type="email" 
+                      required
+                      value={formData.email}
+                      onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:border-brand-blue focus:bg-white outline-none transition-all"
+                      placeholder="email@universidad.edu"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2 uppercase">Mensaje</label>
+                    <textarea 
+                      required
+                      rows="4"
+                      value={formData.message}
+                      onChange={e => setFormData({ ...formData, message: e.target.value })}
+                      className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 focus:border-brand-blue focus:bg-white outline-none transition-all resize-none"
+                      placeholder="¿En qué podemos ayudarte?"
+                    ></textarea>
+                  </div>
+                  {status === 'error' && (
+                    <p className="text-sm text-red-500 font-medium">Hubo un error al enviar el mensaje. Intenta de nuevo.</p>
+                  )}
+                  <button 
+                    disabled={status === 'loading'}
+                    className="w-full bg-brand-blue text-white py-5 rounded-2xl font-bold text-lg hover:bg-blue-900 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {status === 'loading' ? 'Enviando...' : 'Enviar Mensaje'} <Send size={20} />
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         </div>

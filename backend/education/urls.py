@@ -1,7 +1,9 @@
 from django.urls import path
-
-app_name = 'education'
+from .views import GuideListView, UserChallengeListView, UserChallengeStartView, UserChallengeCompleteView
 
 urlpatterns = [
-    # TODO: Add challenge endpoints
+    path('guides/', GuideListView.as_view(), name='guides'),
+    path('challenges/', UserChallengeListView.as_view(), name='user-challenges'),
+    path('challenges/<int:pk>/start/', UserChallengeStartView.as_view(), name='challenge-start'),
+    path('challenges/<int:pk>/complete/', UserChallengeCompleteView.as_view(), name='challenge-complete'),
 ]

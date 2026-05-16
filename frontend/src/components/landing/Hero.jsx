@@ -1,7 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowRight, BarChart3, ShieldCheck, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Hero = () => {
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    setIsAuthenticated(!!localStorage.getItem('access_token'));
+  }, []);
   return (
     <section id="home" className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50">
       {/* Background Decorative Elements */}
@@ -16,8 +23,8 @@ const Hero = () => {
               <span>Nueva plataforma para universitarios</span>
             </div>
             
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] mb-6 tracking-tight">
-              Aprende a manejar tu <span className="text-brand-blue underline decoration-brand-yellow decoration-8 underline-offset-8">dinero</span>, mejora tu vida.
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] mb-6 tracking-tight">
+              Aprende a manejar tu <span className="text-brand-blue underline decoration-brand-yellow decoration-4 sm:decoration-8 underline-offset-4 sm:underline-offset-8">dinero</span>, mejora tu vida.
             </h1>
             
             <p className="text-xl text-slate-600 mb-10 max-w-lg leading-relaxed">
@@ -25,13 +32,23 @@ const Hero = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <a 
-                href="#services"
-                className="px-8 py-4 bg-brand-blue text-white rounded-2xl font-bold text-lg hover:bg-blue-900 transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-2 group"
-              >
-                Ver servicios
-                <ArrowRight className="group-hover:translate-x-1 transition-transform" />
-              </a>
+              {isAuthenticated ? (
+                <button 
+                  onClick={() => navigate('/app')}
+                  className="px-8 py-4 bg-brand-blue text-white rounded-2xl font-bold text-lg hover:bg-blue-900 transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-2 group cursor-pointer"
+                >
+                  Ir a mi Dashboard
+                  <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+                </button>
+              ) : (
+                <a 
+                  href="#services"
+                  className="px-8 py-4 bg-brand-blue text-white rounded-2xl font-bold text-lg hover:bg-blue-900 transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-2 group"
+                >
+                  Ver servicios
+                  <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+                </a>
+              )}
               <a 
                 href="#about"
                 className="px-8 py-4 bg-white text-slate-800 border-2 border-slate-100 rounded-2xl font-bold text-lg hover:border-brand-blue transition-all flex items-center justify-center"
@@ -40,7 +57,7 @@ const Hero = () => {
               </a>
             </div>
 
-            <div className="mt-12 flex items-center gap-6 text-slate-500">
+            <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 text-slate-500">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="text-green-500" size={20} />
                 <span className="text-sm font-medium">Seguro y transparente</span>
@@ -78,11 +95,11 @@ const Hero = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-6">
-                <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100">
+                <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 animate-float" style={{ animationDelay: '1s' }}>
                   <p className="text-xs text-slate-500 mb-1">Gastos Mes</p>
                   <p className="text-lg font-bold text-slate-800">$450.00</p>
                 </div>
-                <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100">
+                <div className="p-4 rounded-3xl bg-slate-50 border border-slate-100 animate-float" style={{ animationDelay: '2.5s' }}>
                   <p className="text-xs text-slate-500 mb-1">Ahorro Mes</p>
                   <p className="text-lg font-bold text-brand-blue">+$200.00</p>
                 </div>

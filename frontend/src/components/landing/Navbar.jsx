@@ -4,8 +4,10 @@ import { Menu, X, ChevronRight } from 'lucide-react';
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    setIsAuthenticated(!!localStorage.getItem('access_token'));
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
@@ -42,10 +44,10 @@ const Navbar = () => {
               </a>
             ))}
             <a 
-              href="/login"
+              href={isAuthenticated ? "/app" : "/login"}
               className="bg-brand-blue text-white px-6 py-2 rounded-full font-semibold hover:bg-blue-900 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
             >
-              Empezar ahora <ChevronRight size={18} />
+              {isAuthenticated ? "Mi Dashboard" : "Empezar ahora"} <ChevronRight size={18} />
             </a>
           </div>
 
@@ -77,10 +79,10 @@ const Navbar = () => {
             ))}
             <div className="pt-4">
               <a 
-                href="/login"
+                href={isAuthenticated ? "/app" : "/login"}
                 className="w-full bg-brand-blue text-white px-6 py-3 rounded-xl font-semibold flex items-center justify-center"
               >
-                Empezar ahora
+                {isAuthenticated ? "Ir a mi Dashboard" : "Empezar ahora"}
               </a>
             </div>
           </div>
