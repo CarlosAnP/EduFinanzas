@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const isDebug = import.meta.env.VITE_DEBUG === 'true' || import.meta.env.DEV;
+const baseURL = isDebug 
+  ? 'http://localhost:8000/api' 
+  : 'https://edufinanzas.onrender.com/api';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+  baseURL,
 });
 
 api.interceptors.request.use((config) => {
