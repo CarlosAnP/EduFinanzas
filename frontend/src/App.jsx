@@ -17,6 +17,7 @@ import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
 import NotFound from './pages/NotFound';
 import Subscriptions from './pages/Subscriptions';
+import Profile from './pages/Profile';
 import { useEffect } from 'react';
 import api from './api/axios';
 import './index.css';
@@ -50,6 +51,7 @@ function App() {
               <Route index element={<Dashboard />} />
               <Route path="expenses" element={<Expenses />} />
               <Route path="subscriptions" element={<Subscriptions />} />
+              <Route path="profile" element={<Profile />} />
               <Route path="hub" element={<Hub />} />
               <Route path="insights" element={<Insights />} />
               <Route path="simulator">

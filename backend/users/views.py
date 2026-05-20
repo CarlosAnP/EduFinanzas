@@ -6,7 +6,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from .serializers import (
     UserSerializer, RegisterSerializer, 
-    OnboardingProfileSerializer, NotificationSerializer
+    OnboardingProfileSerializer, NotificationSerializer,
+    ChangePasswordSerializer
 )
 from .models import OnboardingProfile, Notification
 
@@ -124,3 +125,16 @@ class SelfPromoteAdminView(views.APIView):
             'is_staff': user.is_staff,
             'is_superuser': user.is_superuser
         })
+
+class ChangePasswordView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        
+        user = request.user
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+        
+        return Response({"status": "success", "detail": "Contraseña actualizada exitosamente."})

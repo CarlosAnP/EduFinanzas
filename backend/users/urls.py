@@ -4,7 +4,7 @@ from .views import (
     RegisterView, UserProfileView,
     OnboardingProfileView, NotificationListView, ContactMessageCreateView,
     AdminUserListView, AdminMessageListView, ping_view, SelfPromoteAdminView,
-    MarkNotificationReadView, MarkAllNotificationsReadView
+    MarkNotificationReadView, MarkAllNotificationsReadView, ChangePasswordView
 )
 
 urlpatterns = [
@@ -15,6 +15,7 @@ urlpatterns = [
     
     # Profile & Features
     path('profile/', UserProfileView.as_view(), name='profile'),
+    path('profile/change-password/', ChangePasswordView.as_view(), name='change_password'),
     path('onboarding/', OnboardingProfileView.as_view(), name='onboarding'),
     path('notifications/', NotificationListView.as_view(), name='notifications'),
     path('notifications/<int:pk>/read/', MarkNotificationReadView.as_view(), name='notification_read'),

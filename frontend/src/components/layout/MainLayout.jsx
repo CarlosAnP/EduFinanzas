@@ -1,5 +1,5 @@
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Wallet, BookOpen, LogOut, TrendingUp, Flame, Star, Loader2, Repeat, Calculator, Lightbulb, X, ChevronRight, Sparkles, Bell, CheckCheck, AlertTriangle, Info, CheckCircle, ShieldAlert } from 'lucide-react';
+import { NavLink, Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Home, User, Wallet, BookOpen, LogOut, TrendingUp, Flame, Star, Loader2, Repeat, Calculator, Lightbulb, X, ChevronRight, Sparkles, Bell, CheckCheck, AlertTriangle, Info, CheckCircle, ShieldAlert } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axios';
 import { useEffect, useState } from 'react';
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/app/hub', icon: BookOpen, label: 'Aprende' },
   { to: '/app/insights', icon: Lightbulb, label: 'Insights' },
   { to: '/app/simulator', icon: Calculator, label: 'Simula' },
+  { to: '/app/profile', icon: User, label: 'Mi Perfil' },
 ];
 
 export default function MainLayout() {
@@ -243,13 +244,16 @@ export default function MainLayout() {
 
         {/* User Card */}
         <div className="px-4 py-4">
-          <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-3 border border-slate-200/60">
+          <Link 
+            to="/app/profile" 
+            className="block bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-3 border border-slate-200/60 hover:border-blue-200 hover:shadow-md transition-all duration-200 group cursor-pointer"
+          >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-brand-blue font-bold text-sm">
+              <div className="w-9 h-9 bg-blue-100 group-hover:bg-brand-blue group-hover:text-white rounded-full flex items-center justify-center text-brand-blue font-bold text-sm transition-all duration-200">
                 {initial1}{initial2}
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-700 truncate">{user.first_name || 'Usuario'}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-slate-700 truncate group-hover:text-brand-blue transition-colors">{user.first_name || 'Usuario'}</p>
                 <p className="text-[10px] text-slate-400 truncate">{user.career || 'Estudiante'}</p>
               </div>
             </div>
@@ -281,7 +285,7 @@ export default function MainLayout() {
                 })}
               </div>
             )}
-          </div>
+          </Link>
         </div>
 
         {/* Nav Links */}
@@ -330,9 +334,12 @@ export default function MainLayout() {
           <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
             <Flame size={12} /><span className="font-semibold">{user.streak}</span>
           </div>
-          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-brand-blue font-bold text-xs">
+          <Link 
+            to="/app/profile" 
+            className="w-8 h-8 bg-blue-100 hover:bg-brand-blue hover:text-white rounded-full flex items-center justify-center text-brand-blue font-bold text-xs shadow-inner cursor-pointer transition-all duration-200"
+          >
             {initial1}
-          </div>
+          </Link>
         </div>
       </header>
 

@@ -20,7 +20,32 @@ class UserSerializer(serializers.ModelSerializer):
     badges = UserBadgeSerializer(many=True, read_only=True)
     class Meta:
         model = User
-        fields = ('id', 'email', 'first_name', 'last_name', 'university', 'career', 'semester', 'streak', 'points', 'is_staff', 'date_joined', 'badges')
+        fields = (
+            'id', 'email', 'first_name', 'last_name', 'university', 'career', 
+            'semester', 'streak', 'points', 'is_staff', 'date_joined', 'badges',
+            'bio', 'institution_type', 'study_work_status', 'phone_number', 'birth_date'
+        )
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True, write_only=True)
+    new_password = serializers.CharField(required=True, min_length=8, write_only=True)
+    confirm_password = serializers.CharField(required=True, write_only=True)
+
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError({"confirm_password": "La nueva contraseña y la confirmación no coinciden."})
+        
+        # Opcional: Validar que no sea igual a la anterior
+        if data['old_password'] == data['new_password']:
+            raise serializers.ValidationError({"new_password": "La nueva contraseña debe ser diferente a la anterior."})
+            
+        return data
+
+    def validate_old_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("La contraseña actual es incorrecta.")
+        return value
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)

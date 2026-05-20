@@ -56,6 +56,34 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     semester = models.PositiveSmallIntegerField('semestre', null=True, blank=True)
     streak = models.PositiveIntegerField('racha de días', default=0)
     points = models.PositiveIntegerField('puntos', default=0)
+    
+    # Nuevos campos de perfil detallados
+    bio = models.TextField('biografía', max_length=500, blank=True)
+    institution_type = models.CharField(
+        'tipo de institución',
+        max_length=20,
+        blank=True,
+        choices=[
+            ('universidad', 'Universidad'),
+            ('instituto', 'Instituto Técnico/Tecnológico'),
+            ('colegio', 'Colegio / Escuela'),
+            ('otro', 'Otro')
+        ]
+    )
+    study_work_status = models.CharField(
+        'estado académico/laboral',
+        max_length=25,
+        blank=True,
+        choices=[
+            ('solo_estudia', 'Solo Estudia'),
+            ('estudia_trabaja', 'Estudia y Trabaja'),
+            ('solo_trabaja', 'Solo Trabaja'),
+            ('buscando_empleo', 'Buscando Empleo'),
+            ('otro', 'Otro')
+        ]
+    )
+    phone_number = models.CharField('teléfono', max_length=20, blank=True)
+    birth_date = models.DateField('fecha de nacimiento', null=True, blank=True)
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
