@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import {
   Plus, Target, AlertTriangle, ArrowUpRight, ArrowDownRight, Search,
-  Filter, TrendingDown, TrendingUp, Settings, Loader2, Edit2, Wallet
+  Filter, TrendingDown, TrendingUp, Settings, Loader2, Edit2, Wallet,
+  Trash2, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
@@ -24,8 +25,18 @@ export default function Expenses() {
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [showAddFundsModal, setShowAddFundsModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   
+  // New States for Edit & Delete and Pagination
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [txToEdit, setTxToEdit] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [txToDelete, setTxToDelete] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [activeTab, setActiveTab] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
   const [newGoal, setNewGoal] = useState({ title: '', target_amount: '', description: '', deadline: '' });
   const [budgetForm, setBudgetForm] = useState({ category: 'alimentacion', budget: '' });
   const [fundData, setFundData] = useState({ goalId: null, amount: '' });
@@ -33,10 +44,31 @@ export default function Expenses() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: transactions = [], isLoading: isLoadingTx } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: async () => { const res = await api.get('/finance/transactions/'); return res.data; }
+  // Debounce search term to prevent extra network calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const { data: transactionsData, isLoading: isLoadingTx } = useQuery({
+    queryKey: ['transactions', currentPage, activeTab, debouncedSearch],
+    queryFn: async () => {
+      const res = await api.get('/finance/transactions/', {
+        params: {
+          page: currentPage,
+          type: activeTab,
+          search: debouncedSearch
+        }
+      });
+      return res.data;
+    }
   });
+
+  const transactions = transactionsData?.results || [];
+  const totalCount = transactionsData?.count || 0;
 
   const { data: goals = [], isLoading: isLoadingGoals } = useQuery({
     queryKey: ['goals'],
@@ -93,10 +125,54 @@ export default function Expenses() {
     onError: () => toast({ title: 'Error', description: 'No se pudo realizar el aporte.', variant: 'error' })
   });
 
-  const filteredTx = (type) => {
-    let filtered = type === 'all' ? transactions : transactions.filter(t => t.transaction_type === (type === 'income' ? 'ingreso' : 'gasto'));
-    if (searchTerm) filtered = filtered.filter(t => t.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    return filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+  const editTxMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      const res = await api.put(`/finance/transactions/${id}/`, data);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      toast({ title: '¡Actualizado!', description: 'Movimiento guardado exitosamente.', variant: 'success' });
+      setShowEditModal(false);
+      setTxToEdit(null);
+    },
+    onError: (err) => {
+      const errMsg = err?.response?.data?.[0] || 'No se pudo guardar la transacción.';
+      toast({ title: 'Error', description: errMsg, variant: 'error' });
+    }
+  });
+
+  const deleteTxMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await api.delete(`/finance/transactions/${id}/`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      toast({ title: '¡Eliminado!', description: 'El movimiento ha sido borrado.', variant: 'success' });
+      setShowDeleteModal(false);
+      setTxToDelete(null);
+    },
+    onError: (err) => {
+      const errMsg = err?.response?.data?.[0] || 'No se pudo eliminar el movimiento.';
+      toast({ title: 'Error', description: errMsg, variant: 'error' });
+    }
+  });
+
+  const canModify = (createdAtString) => {
+    if (!createdAtString) return true;
+    const createdAt = new Date(createdAtString);
+    const now = new Date();
+    const diffInMs = now.getTime() - createdAt.getTime();
+    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+    return diffInDays < 2;
+  };
+
+  const filteredTx = (tab) => {
+    if (tab !== activeTab) return [];
+    return transactions;
   };
 
   const handleAddGoal = () => {
@@ -251,7 +327,7 @@ export default function Expenses() {
             <Button onClick={() => setShowAddModal(true)} icon={<Plus size={16}/>} className="w-full sm:w-auto rounded-xl">Registrar</Button>
           </div>
 
-          <Tabs defaultValue="all" className="p-6">
+          <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setCurrentPage(1); }} className="p-6">
             {({ active, setActive }) => (
               <>
                 <TabsList active={active} setActive={setActive} className="mb-6 bg-slate-100 p-1 rounded-xl inline-flex">
@@ -270,6 +346,7 @@ export default function Expenses() {
                             <TableHead className="py-4 text-slate-400 uppercase text-[11px] font-bold tracking-wider">Categoría</TableHead>
                             <TableHead className="py-4 text-slate-400 uppercase text-[11px] font-bold tracking-wider">Fecha</TableHead>
                             <TableHead className="py-4 text-slate-400 uppercase text-[11px] font-bold tracking-wider text-right">Monto</TableHead>
+                            <TableHead className="py-4 text-slate-400 uppercase text-[11px] font-bold tracking-wider text-right">Acciones</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -300,6 +377,38 @@ export default function Expenses() {
                                     {isIncome ? '+' : ''}{formatCurrency(tx.amount)}
                                   </span>
                                 </TableCell>
+                                <TableCell className="py-4 text-right">
+                                  <div className="flex justify-end gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                    {canModify(tx.created_at) ? (
+                                      <>
+                                        <button
+                                          onClick={() => {
+                                            setTxToEdit(tx);
+                                            setShowEditModal(true);
+                                          }}
+                                          className="p-1.5 rounded-lg bg-slate-100 text-slate-500 hover:text-brand-blue hover:bg-blue-50 transition-colors cursor-pointer"
+                                          title="Editar movimiento"
+                                        >
+                                          <Edit2 size={13} />
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setTxToDelete(tx);
+                                            setShowDeleteModal(true);
+                                          }}
+                                          className="p-1.5 rounded-lg bg-slate-100 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                          title="Eliminar movimiento"
+                                        >
+                                          <Trash2 size={13} />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <span className="text-[10px] text-slate-400 italic bg-slate-100 px-2 py-1 rounded" title="Solo modificable durante las primeras 48 horas">
+                                        Bloqueado (&gt;2d)
+                                      </span>
+                                    )}
+                                  </div>
+                                </TableCell>
                               </TableRow>
                             );
                           })}
@@ -319,6 +428,47 @@ export default function Expenses() {
               </>
             )}
           </Tabs>
+
+          {/* PAGINATION CONTROLS */}
+          {totalCount > 10 && (
+            <div className="p-6 border-t border-slate-100 bg-slate-50/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-xs font-semibold text-slate-500">
+                Mostrando <span className="text-slate-800 font-bold">{Math.min(totalCount, (currentPage - 1) * 10 + 1)}-{Math.min(totalCount, currentPage * 10)}</span> de <span className="text-slate-800 font-bold">{totalCount}</span> movimientos
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  className="rounded-xl px-3 py-2 border-slate-200"
+                >
+                  <ChevronLeft size={16} />
+                </Button>
+                {Array.from({ length: Math.ceil(totalCount / 10) }, (_, i) => i + 1).map(pageNum => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-8 h-8 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer
+                      ${currentPage === pageNum 
+                        ? 'bg-brand-blue text-white shadow-md shadow-blue-500/20' 
+                        : 'text-slate-500 hover:bg-slate-100 border border-transparent hover:border-slate-200'}`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage >= Math.ceil(totalCount / 10)}
+                  onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalCount / 10), prev + 1))}
+                  className="rounded-xl px-3 py-2 border-slate-200"
+                >
+                  <ChevronRight size={16} />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -498,6 +648,22 @@ export default function Expenses() {
       </Modal>
 
       <AddTransactionModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} />
+
+      <EditTransactionModal 
+        isOpen={showEditModal} 
+        onClose={() => { setShowEditModal(false); setTxToEdit(null); }} 
+        transaction={txToEdit} 
+        onSave={(data) => editTxMutation.mutate({ id: txToEdit.id, data })}
+        isPending={editTxMutation.isPending}
+      />
+
+      <DeleteTransactionConfirmModal 
+        isOpen={showDeleteModal} 
+        onClose={() => { setShowDeleteModal(false); setTxToDelete(null); }} 
+        transaction={txToDelete} 
+        onDelete={() => deleteTxMutation.mutate(txToDelete.id)}
+        isPending={deleteTxMutation.isPending}
+      />
     </div>
   );
 }
@@ -578,6 +744,132 @@ function AddTransactionModal({ isOpen, onClose }) {
         <Button variant="outline" onClick={onClose} className="rounded-xl">Cancelar</Button>
         <Button onClick={handleSave} disabled={txMutation.isPending} className="font-bold bg-brand-blue hover:bg-blue-700 rounded-xl px-8">
           {txMutation.isPending ? 'Guardando...' : 'Guardar Movimiento'}
+        </Button>
+      </ModalFooter>
+    </Modal>
+  );
+}
+
+function EditTransactionModal({ isOpen, onClose, transaction, onSave, isPending }) {
+  const [tx, setTx] = useState({ transaction_type: 'gasto', amount: '', category: 'alimentacion', description: '', date: '' });
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (transaction) {
+      setTx({
+        transaction_type: transaction.transaction_type,
+        amount: transaction.amount,
+        category: transaction.category,
+        description: transaction.description || '',
+        date: transaction.date
+      });
+    }
+  }, [transaction]);
+
+  const handleSave = () => {
+    if (!tx.amount) return toast({ title: 'Error', description: 'Ingresa un monto.', variant: 'error' });
+    onSave(tx);
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Editar Movimiento">
+      <ModalBody>
+        <div className="space-y-5 py-2">
+          <div className="flex bg-slate-100 p-1 rounded-2xl">
+            {['gasto', 'ingreso'].map(t => (
+              <button key={t} onClick={() => setTx(p => ({ ...p, transaction_type: t }))}
+                className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2
+                  ${tx.transaction_type === t ? (t === 'gasto' ? 'bg-rose-500 text-white shadow-md' : 'bg-emerald-500 text-white shadow-md') : 'text-slate-500 hover:bg-slate-200'}`}>
+                {t === 'gasto' ? <><TrendingDown size={18} /> Gasto</> : <><TrendingUp size={18} /> Ingreso</>}
+              </button>
+            ))}
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-1.5">Monto</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+              <input type="number" placeholder="0" value={tx.amount}
+                onChange={e => setTx(p => ({ ...p, amount: e.target.value }))}
+                className="w-full pl-8 pr-4 py-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-blue outline-none text-2xl font-black bg-slate-50 focus:bg-white transition-colors" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Categoría</label>
+              <select value={tx.category} onChange={e => setTx(p => ({ ...p, category: e.target.value }))}
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-blue outline-none bg-slate-50 focus:bg-white text-sm font-semibold transition-colors cursor-pointer">
+                {Object.entries(iconMap).map(([k, v]) => (
+                  <option key={k} value={k}>{v.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Fecha</label>
+              <input type="date" value={tx.date}
+                onChange={e => setTx(p => ({ ...p, date: e.target.value }))}
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-blue outline-none bg-slate-50 focus:bg-white text-sm font-semibold transition-colors" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-1.5">Descripción</label>
+            <input type="text" placeholder="Ej: Almuerzo cafetería" value={tx.description}
+              onChange={e => setTx(p => ({ ...p, description: e.target.value }))}
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-blue outline-none bg-slate-50 focus:bg-white text-sm transition-colors" />
+          </div>
+        </div>
+      </ModalBody>
+      <ModalFooter>
+        <Button variant="outline" onClick={onClose} className="rounded-xl">Cancelar</Button>
+        <Button onClick={handleSave} disabled={isPending} className="font-bold bg-brand-blue hover:bg-blue-700 rounded-xl px-8">
+          {isPending ? 'Guardando...' : 'Guardar Cambios'}
+        </Button>
+      </ModalFooter>
+    </Modal>
+  );
+}
+
+function DeleteTransactionConfirmModal({ isOpen, onClose, transaction, onDelete, isPending }) {
+  if (!transaction) return null;
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="¿Eliminar Movimiento?">
+      <ModalBody>
+        <div className="space-y-4 py-2">
+          <div className="p-4 bg-rose-50 rounded-2xl text-rose-800 text-sm font-semibold flex items-start gap-2.5">
+            <AlertTriangle className="text-rose-500 shrink-0 mt-0.5" size={20} />
+            <div>
+              <p className="font-bold text-rose-800">Esta acción no se puede deshacer.</p>
+              <p className="font-normal text-rose-700 mt-1">
+                ¿Estás seguro de que deseas eliminar este registro de movimiento? Se actualizará tu balance mensual.
+              </p>
+            </div>
+          </div>
+          
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-sm space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400 font-medium">Descripción:</span>
+              <span className="text-slate-700 font-bold">{transaction.description || 'Sin descripción'}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400 font-medium">Categoría:</span>
+              <span className="text-slate-700 font-bold">{getCategoryInfo(transaction.category).label}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400 font-medium">Fecha:</span>
+              <span className="text-slate-500 font-semibold">{formatDate(transaction.date)}</span>
+            </div>
+            <div className="flex justify-between items-center border-t border-slate-200/60 pt-3 mt-1">
+              <span className="text-slate-400 font-medium">Monto:</span>
+              <span className={`font-black text-base ${transaction.transaction_type === 'ingreso' ? 'text-emerald-500' : 'text-slate-800'}`}>
+                {transaction.transaction_type === 'ingreso' ? '+' : '-'}{formatCurrency(transaction.amount)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </ModalBody>
+      <ModalFooter>
+        <Button variant="outline" onClick={onClose} className="rounded-xl">Cancelar</Button>
+        <Button onClick={onDelete} disabled={isPending} className="bg-rose-500 hover:bg-rose-600 font-bold text-white border-none rounded-xl px-8">
+          {isPending ? 'Eliminando...' : 'Eliminar Movimiento'}
         </Button>
       </ModalFooter>
     </Modal>

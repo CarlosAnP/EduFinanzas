@@ -169,3 +169,36 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f'{self.name} - ${self.amount} ({self.get_frequency_display()})'
+
+
+class Credit(models.Model):
+    """
+    Modelo para representar créditos o préstamos del estudiante.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='credits',
+        verbose_name='usuario'
+    )
+    name = models.CharField('nombre del crédito', max_length=200)
+    total_amount = models.DecimalField('monto total prestado', max_digits=12, decimal_places=2)
+    remaining_amount = models.DecimalField('saldo pendiente', max_digits=12, decimal_places=2)
+    installment_amount = models.DecimalField('valor de la cuota', max_digits=12, decimal_places=2)
+    total_installments = models.IntegerField('cuotas totales')
+    paid_installments = models.IntegerField('cuotas pagadas', default=0)
+    interest_rate = models.DecimalField('tasa de interés mensual (%)', max_digits=5, decimal_places=2, default=0.0)
+    start_date = models.DateField('fecha de inicio')
+    next_payment_date = models.DateField('próxima fecha de pago', null=True, blank=True)
+    category = models.CharField('categoría', max_length=20, choices=Transaction.CATEGORY_CHOICES, default='otro')
+    is_active = models.BooleanField('activo', default=True)
+    created_at = models.DateTimeField('fecha de creación', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Crédito'
+        verbose_name_plural = 'Créditos'
+        ordering = ['next_payment_date']
+
+    def __str__(self):
+        return f'{self.name} - Cuota: ${self.installment_amount} ({self.paid_installments}/{self.total_installments})'
+

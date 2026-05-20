@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 const navItems = [
   { to: '/app', icon: Home, label: 'Inicio' },
   { to: '/app/expenses', icon: Wallet, label: 'Gestión' },
-  { to: '/app/subscriptions', icon: Repeat, label: 'Suscripciones' },
+  { to: '/app/subscriptions', icon: Repeat, label: 'Compromisos' },
   { to: '/app/hub', icon: BookOpen, label: 'Aprende' },
   { to: '/app/insights', icon: Lightbulb, label: 'Insights' },
   { to: '/app/simulator', icon: Calculator, label: 'Simula' },

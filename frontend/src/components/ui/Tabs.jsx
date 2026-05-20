@@ -1,7 +1,19 @@
 import { useState } from 'react';
 
-export function Tabs({ defaultValue, children, className = '' }) {
-  const [active, setActive] = useState(defaultValue);
+export function Tabs({ defaultValue, value, onValueChange, children, className = '' }) {
+  const [localActive, setLocalActive] = useState(defaultValue);
+  const isControlled = value !== undefined;
+  const active = isControlled ? value : localActive;
+  
+  const setActive = (newValue) => {
+    if (!isControlled) {
+      setLocalActive(newValue);
+    }
+    if (onValueChange) {
+      onValueChange(newValue);
+    }
+  };
+
   return (
     <div className={className} data-active-tab={active}>
       {typeof children === 'function' ? children({ active, setActive }) : 

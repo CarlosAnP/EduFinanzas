@@ -3,14 +3,22 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Sum
 import datetime
-from .models import Transaction, Goal, CategoryBudget, Subscription
-from .serializers import TransactionSerializer, GoalSerializer, CategoryBudgetSerializer, SubscriptionSerializer
+from .models import Transaction, Goal, CategoryBudget, Subscription, Credit
+from .serializers import (
+    TransactionSerializer, GoalSerializer, CategoryBudgetSerializer, 
+    SubscriptionSerializer, CreditSerializer
+)
+from .services import process_recurring_payments, add_months
 
 class DashboardSummaryView(views.APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
+        
+        # Procesar cobros automáticos en tiempo real
+        process_recurring_payments(user)
+
         
         # Calculate summary
         income = Transaction.objects.filter(user=user, transaction_type='ingreso').aggregate(total=Sum('amount'))['total'] or 0
@@ -98,15 +106,78 @@ class DashboardSummaryView(views.APIView):
             "activeSubscriptions": SubscriptionSerializer(subscriptions, many=True).data
         })
 
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import ValidationError
+from django.utils import timezone
+from datetime import timedelta
+
+class TransactionPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class TransactionListCreateView(generics.ListCreateAPIView):
+    serializer_class = TransactionSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = TransactionPagination
+
+    def get_queryset(self):
+        # Procesar cobros automáticos en tiempo real
+        process_recurring_payments(self.request.user)
+        queryset = Transaction.objects.filter(user=self.request.user)
+        
+        # Filter by type (all, income, expense)
+        tx_type = self.request.query_params.get('type')
+        if tx_type == 'income':
+            queryset = queryset.filter(transaction_type='ingreso')
+        elif tx_type == 'expense':
+            queryset = queryset.filter(transaction_type='gasto')
+            
+        # Filter by search term
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(description__icontains=search)
+            
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+        try:
+            from education.services import evaluate_user_challenges
+            evaluate_user_challenges(
+                self.request.user,
+                trigger_hints=['register_transactions', 'daily_transaction', 'savings_rate_10', 'savings_rate_20', 'no_small_expenses_7']
+            )
+        except Exception:
+            pass
+
+class TransactionDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TransactionSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Transaction.objects.filter(user=self.request.user)
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        if timezone.now() - instance.created_at > timedelta(days=2):
+            raise ValidationError("No se pueden modificar movimientos registrados hace más de 2 días.")
+        serializer.save()
+        # Re-evaluate challenges after edit
+        try:
+            from education.services import evaluate_user_challenges
+            evaluate_user_challenges(
+                self.request.user,
+                trigger_hints=['register_transactions', 'daily_transaction', 'savings_rate_10', 'savings_rate_20', 'no_small_expenses_7']
+            )
+        except Exception:
+            pass
+
+    def perform_destroy(self, instance):
+        if timezone.now() - instance.created_at > timedelta(days=2):
+            raise ValidationError("No se pueden eliminar movimientos registrados hace más de 2 días.")
+        instance.delete()
+        # Re-evaluate challenges after deletion
         try:
             from education.services import evaluate_user_challenges
             evaluate_user_challenges(
@@ -231,6 +302,55 @@ class SubscriptionDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return Subscription.objects.filter(user=self.request.user)
+
+
+class CreditListCreateView(generics.ListCreateAPIView):
+    serializer_class = CreditSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        process_recurring_payments(self.request.user)
+        return Credit.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        total_amount = serializer.validated_data['total_amount']
+        start_date = serializer.validated_data['start_date']
+        next_pmt_date = add_months(start_date, 1)
+
+        # Guardar crédito inicializando saldo pendiente y primer cobro
+        credit = serializer.save(
+            user=self.request.user,
+            remaining_amount=total_amount,
+            next_payment_date=next_pmt_date
+        )
+
+        # Generar automáticamente la transacción de ingreso por desembolso
+        Transaction.objects.create(
+            user=self.request.user,
+            transaction_type='ingreso',
+            amount=total_amount,
+            category=serializer.validated_data.get('category', 'otro'),
+            description=f"Desembolso de crédito: {credit.name}",
+            date=start_date
+        )
+
+        # Evaluar misiones
+        try:
+            from education.services import evaluate_user_challenges
+            evaluate_user_challenges(
+                self.request.user,
+                trigger_hints=['register_transactions', 'daily_transaction']
+            )
+        except Exception:
+            pass
+
+
+class CreditDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = CreditSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Credit.objects.filter(user=self.request.user)
 
 
 class InsightsView(views.APIView):
