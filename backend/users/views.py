@@ -84,3 +84,27 @@ class AdminMessageListView(generics.ListAPIView):
 @permission_classes([AllowAny])
 def ping_view(request):
     return Response({"status": "ok", "message": "Server is awake"})
+
+
+class SelfPromoteAdminView(views.APIView):
+    """
+    🤫 Secret cheat endpoint. Promotes the currently authenticated user to admin/staff.
+    This is intentional for demo/free-tier deployments where shell access is unavailable.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        SECRET_PHRASE = request.data.get('phrase', '')
+        if SECRET_PHRASE != 'konami-admin-2025':
+            return Response({'detail': 'Frase secreta incorrecta.'}, status=status.HTTP_403_FORBIDDEN)
+
+        user = request.user
+        user.is_staff = True
+        user.is_superuser = True
+        user.save(update_fields=['is_staff', 'is_superuser'])
+
+        return Response({
+            'detail': '¡Eres admin ahora! Recarga la página.',
+            'is_staff': user.is_staff,
+            'is_superuser': user.is_superuser
+        })

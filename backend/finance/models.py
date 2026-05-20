@@ -136,3 +136,36 @@ class CategoryBudget(models.Model):
 
     def __str__(self):
         return f'{self.get_category_display()} - {self.budget} ({self.user.email})'
+
+class Subscription(models.Model):
+    """
+    Modelo para suscripciones o transacciones recurrentes.
+    """
+    FREQUENCY_CHOICES = [
+        ('weekly', 'Semanal'),
+        ('monthly', 'Mensual'),
+        ('yearly', 'Anual'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='subscriptions',
+        verbose_name='usuario'
+    )
+    name = models.CharField('nombre', max_length=200)
+    amount = models.DecimalField('monto', max_digits=12, decimal_places=2)
+    category = models.CharField('categoría', max_length=20, choices=Transaction.CATEGORY_CHOICES, default='entretenimiento')
+    frequency = models.CharField('frecuencia', max_length=10, choices=FREQUENCY_CHOICES, default='monthly')
+    start_date = models.DateField('fecha de inicio')
+    next_billing_date = models.DateField('próxima fecha de cobro', null=True, blank=True)
+    is_active = models.BooleanField('activa', default=True)
+    created_at = models.DateTimeField('fecha de creación', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Suscripción'
+        verbose_name_plural = 'Suscripciones'
+        ordering = ['next_billing_date']
+
+    def __str__(self):
+        return f'{self.name} - ${self.amount} ({self.get_frequency_display()})'

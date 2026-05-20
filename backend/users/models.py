@@ -175,3 +175,29 @@ class ContactMessage(models.Model):
 
     def __str__(self):
         return f'Mensaje de {self.name} ({self.email})'
+
+class Badge(models.Model):
+    name = models.CharField('nombre', max_length=100)
+    description = models.TextField('descripción')
+    icon_name = models.CharField('nombre del ícono (lucide)', max_length=50, default='Star')
+    color = models.CharField('color', max_length=20, default='amber')
+
+    class Meta:
+        verbose_name = 'Insignia'
+        verbose_name_plural = 'Insignias'
+
+    def __str__(self):
+        return self.name
+
+class UserBadge(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='badges')
+    badge = models.ForeignKey(Badge, on_delete=models.CASCADE, related_name='earned_by')
+    earned_at = models.DateTimeField('fecha de obtención', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Insignia de Usuario'
+        verbose_name_plural = 'Insignias de Usuarios'
+        unique_together = ('user', 'badge')
+
+    def __str__(self):
+        return f'{self.user.email} - {self.badge.name}'

@@ -1,14 +1,16 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Wallet, BookOpen, LogOut, TrendingUp, Flame, Star, Loader2 } from 'lucide-react';
+import { Home, Wallet, BookOpen, LogOut, TrendingUp, Flame, Star, Loader2, Repeat, Calculator, Lightbulb, X, ChevronRight, Sparkles } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../api/axios';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const navItems = [
   { to: '/app', icon: Home, label: 'Inicio' },
   { to: '/app/expenses', icon: Wallet, label: 'Gestión' },
+  { to: '/app/subscriptions', icon: Repeat, label: 'Suscripciones' },
   { to: '/app/hub', icon: BookOpen, label: 'Aprende' },
-  { to: '/app/simulator', icon: Flame, label: 'Simulador' },
+  { to: '/app/insights', icon: Lightbulb, label: 'Insights' },
+  { to: '/app/simulator', icon: Calculator, label: 'Simula' },
 ];
 
 export default function MainLayout() {
@@ -44,7 +46,6 @@ export default function MainLayout() {
     );
   }
 
-  // Fallbacks if data is missing
   const initial1 = user.first_name ? user.first_name[0] : 'U';
   const initial2 = user.last_name ? user.last_name[0] : '';
 
@@ -86,6 +87,24 @@ export default function MainLayout() {
                 <span className="font-semibold">{user.points} pts</span>
               </div>
             </div>
+            
+            {/* Badges Section */}
+            {user.badges && user.badges.length > 0 && (
+              <div className="mt-3 pt-2 border-t border-slate-200/60 flex flex-wrap gap-1">
+                {user.badges.map(b => {
+                  const badgeInfo = b.badge;
+                  return (
+                    <div 
+                      key={b.id} 
+                      className="p-1 rounded bg-amber-100 border border-amber-200 flex items-center justify-center cursor-help"
+                      title={`${badgeInfo.name}: ${badgeInfo.description}`}
+                    >
+                      <Star size={14} className="text-amber-500 fill-amber-500" />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -164,6 +183,103 @@ export default function MainLayout() {
           );
         })}
       </nav>
+
+      {/* Floating Tip of the Day Widget */}
+      <TipOfDayWidget />
     </div>
+  );
+}
+
+function TipOfDayWidget() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    const key = `tip_dismissed_${new Date().toDateString()}`;
+    return localStorage.getItem(key) === 'true';
+  });
+
+  const { data } = useQuery({
+    queryKey: ['insights'],
+    queryFn: async () => {
+      const res = await api.get('/finance/insights/');
+      return res.data;
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+
+  const tip = data?.tip_of_the_day;
+
+  if (!tip || dismissed) return null;
+
+  const handleDismiss = () => {
+    const key = `tip_dismissed_${new Date().toDateString()}`;
+    localStorage.setItem(key, 'true');
+    setDismissed(true);
+    setIsOpen(false);
+  };
+
+  return (
+    <>
+      {/* Expanded card */}
+      {isOpen && (
+        <div className="fixed bottom-24 md:bottom-8 right-4 md:right-6 z-50 w-80 animate-fade-in">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-400 via-orange-400 to-amber-500 shadow-2xl shadow-amber-500/30 text-white p-6">
+            {/* Background decoration */}
+            <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            
+            {/* Close button */}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute top-3 right-3 p-1.5 bg-white/20 hover:bg-white/30 rounded-xl transition-colors cursor-pointer z-10"
+            >
+              <X size={14} />
+            </button>
+
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 bg-white/30 rounded-lg">
+                  <Sparkles size={14} className="text-white" />
+                </div>
+                <span className="font-bold text-xs uppercase tracking-wider text-amber-100">Consejo del Día</span>
+              </div>
+
+              <h4 className="font-black text-base leading-tight mb-2">{tip.title}</h4>
+              <p className="text-amber-50 text-sm leading-relaxed font-medium mb-5">{tip.suggestion}</p>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleDismiss}
+                  className="flex-1 py-2 text-xs font-bold text-amber-200 hover:text-white transition-colors cursor-pointer"
+                >
+                  No mostrar hoy
+                </button>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="flex-1 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Entendido ✓
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating button */}
+      <button
+        onClick={() => setIsOpen(prev => !prev)}
+        className={`fixed bottom-[5.5rem] md:bottom-6 right-4 md:right-6 z-50 w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl transition-all duration-300 cursor-pointer group
+          ${isOpen
+            ? 'bg-amber-500 shadow-amber-500/40 scale-95'
+            : 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-amber-500/30 hover:scale-110 hover:shadow-amber-500/50'
+          }`}
+        title="Consejo del Día"
+      >
+        <Lightbulb size={24} className="text-white group-hover:animate-pulse" />
+        {!isOpen && (
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-white" />
+        )}
+      </button>
+    </>
   );
 }

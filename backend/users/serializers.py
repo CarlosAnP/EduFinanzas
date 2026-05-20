@@ -1,14 +1,26 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import OnboardingProfile, Notification
+from .models import OnboardingProfile, Notification, Badge, UserBadge
 
 User = get_user_model()
 
+class BadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = ('id', 'name', 'description', 'icon_name', 'color')
+
+class UserBadgeSerializer(serializers.ModelSerializer):
+    badge = BadgeSerializer(read_only=True)
+    class Meta:
+        model = UserBadge
+        fields = ('id', 'badge', 'earned_at')
+
 class UserSerializer(serializers.ModelSerializer):
+    badges = UserBadgeSerializer(many=True, read_only=True)
     class Meta:
         model = User
-        fields = ('id', 'email', 'first_name', 'last_name', 'university', 'career', 'semester', 'streak', 'points', 'is_staff', 'date_joined')
+        fields = ('id', 'email', 'first_name', 'last_name', 'university', 'career', 'semester', 'streak', 'points', 'is_staff', 'date_joined', 'badges')
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)

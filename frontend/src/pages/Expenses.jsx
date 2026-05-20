@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import {
   Plus, Target, AlertTriangle, ArrowUpRight, ArrowDownRight, Search,
-  Filter, TrendingDown, TrendingUp, Settings, Loader2, Edit2
+  Filter, TrendingDown, TrendingUp, Settings, Loader2, Edit2, Wallet
 } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
@@ -16,7 +16,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/Tabs'
 import { getCategoryInfo, CategoryIcon } from '../components/CategoryIcons';
 import iconMap from '../components/CategoryIcons';
 
-// Helper formatter functions
 const formatCurrency = (value) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
 const formatDate = (dateString) => new Date(dateString).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -34,7 +33,6 @@ export default function Expenses() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Queries
   const { data: transactions = [], isLoading: isLoadingTx } = useQuery({
     queryKey: ['transactions'],
     queryFn: async () => { const res = await api.get('/finance/transactions/'); return res.data; }
@@ -50,7 +48,6 @@ export default function Expenses() {
     queryFn: async () => { const res = await api.get('/finance/dashboard/'); return res.data; }
   });
 
-  // Mutations
   const addGoalMutation = useMutation({
     mutationFn: async (data) => {
       const res = await api.post('/finance/goals/', data);
@@ -99,18 +96,13 @@ export default function Expenses() {
   const filteredTx = (type) => {
     let filtered = type === 'all' ? transactions : transactions.filter(t => t.transaction_type === (type === 'income' ? 'ingreso' : 'gasto'));
     if (searchTerm) filtered = filtered.filter(t => t.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    // Sort by date descending
     return filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
   };
 
   const handleAddGoal = () => {
     if (!newGoal.title || !newGoal.target_amount) return toast({ title: 'Error', description: 'Completa todos los campos requeridos.', variant: 'error' });
-    
     const payload = { ...newGoal };
-    if (!payload.deadline) {
-      delete payload.deadline;
-    }
-    
+    if (!payload.deadline) delete payload.deadline;
     addGoalMutation.mutate(payload);
   };
 
@@ -125,307 +117,386 @@ export default function Expenses() {
   };
 
   if (isLoadingTx || isLoadingGoals || isLoadingDashboard) {
-    return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-brand-blue" size={40} /></div>;
+    return <div className="flex justify-center items-center h-[70vh]"><Loader2 className="animate-spin text-brand-blue" size={40} /></div>;
   }
 
   const categoriesData = dashboardData?.categories || [];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-800">Gestión Financiera</h1>
-          <p className="text-slate-500 text-sm mt-1">Controla tus categorías, gastos y metas.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" icon={<Settings size={18} />} onClick={() => setShowBudgetModal(true)}>Presupuestos</Button>
-          <Button icon={<Plus size={18} />} onClick={() => setShowAddModal(true)}>Registrar</Button>
+    <div className="space-y-10 animate-fade-in pb-10">
+      
+      {/* HEADER BANNER */}
+      <div className="relative rounded-[2rem] bg-gradient-to-r from-brand-blue to-indigo-700 text-white p-8 md:p-10 shadow-xl overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/4 translate-x-1/4 pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                <Wallet size={20} className="text-white" />
+              </div>
+              <span className="font-bold tracking-wider uppercase text-xs text-blue-100">Panel de Control</span>
+            </div>
+            <h1 className="text-3xl md:text-5xl font-black mb-2 tracking-tight text-white drop-shadow-sm">Gestión Inteligente</h1>
+            <p className="text-blue-50 max-w-lg text-sm md:text-base leading-relaxed">
+              Maneja tus presupuestos mensuales, revisa cada movimiento y construye un fondo sólido cumpliendo tus metas.
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+            <Button 
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-2xl px-6 py-6 h-auto flex flex-col items-center justify-center gap-2 transition-all backdrop-blur-sm"
+              onClick={() => setShowBudgetModal(true)}
+            >
+              <Settings size={22} />
+              <span className="text-xs font-semibold">Presupuestos</span>
+            </Button>
+            <Button 
+              className="bg-brand-yellow hover:bg-amber-400 text-slate-900 border-none rounded-2xl px-6 py-6 h-auto flex flex-col items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20"
+              onClick={() => setShowAddModal(true)}
+            >
+              <Plus size={22} className="stroke-[3]" />
+              <span className="text-xs font-bold uppercase tracking-wider">Transacción</span>
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Categories Grid */}
-      <div>
-        <h2 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-          <Filter size={16} className="text-slate-400" /> Presupuesto por Categoría
+      {/* CATEGORIES BUDGETS */}
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+          <Filter size={24} className="text-indigo-500" /> Presupuestos por Categoría
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {categoriesData.map(cat => {
-            const pct = cat.budget > 0 ? Math.round((cat.spent / cat.budget) * 100) : 0;
             const isOver = cat.spent > cat.budget && cat.budget > 0;
             const catInfo = getCategoryInfo(cat.id);
             const CatIcon = catInfo.icon;
+            const pct = cat.budget > 0 ? Math.min(100, (cat.spent / cat.budget) * 100) : 0;
+            
             return (
-              <Card key={cat.id} className={`p-3 relative group ${isOver ? 'border-rose-200 bg-rose-50/40' : ''}`} hover>
+              <div key={cat.id} className={`group bg-white rounded-2xl p-5 border shadow-sm transition-all relative overflow-hidden ${isOver ? 'border-rose-200 bg-rose-50/30' : 'border-slate-100 hover:border-slate-300'}`}>
                 <button 
                   onClick={() => {
                     setBudgetForm({ category: cat.id, budget: cat.budget > 0 ? cat.budget : '' });
                     setShowBudgetModal(true);
                   }}
-                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/50 text-slate-400 hover:text-brand-blue hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-all cursor-pointer border border-transparent hover:border-slate-200"
+                  className="absolute top-3 right-3 p-2 rounded-xl bg-slate-100 text-slate-400 hover:text-brand-blue hover:bg-blue-50 opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-10"
                   title="Editar límite"
                 >
-                  <Edit2 size={12} />
+                  <Edit2 size={14} />
                 </button>
-                <div className="flex items-center gap-2 mb-2 pr-6">
-                  <CatIcon size={14} className={catInfo.color} />
-                  <span className="text-xs font-semibold text-slate-600 truncate">{cat.name}</span>
+                
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`p-2.5 rounded-xl ${catInfo.bgClass}`}>
+                    <CatIcon size={18} className={catInfo.color} />
+                  </div>
+                  <span className="font-bold text-slate-700 text-sm truncate">{cat.name}</span>
                 </div>
-                <p className={`text-lg font-bold ${isOver ? 'text-rose-600' : 'text-slate-800'}`}>
-                  {formatCurrency(cat.spent)}
-                </p>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] text-slate-400">de {formatCurrency(cat.budget)}</p>
-                  {cat.budget > 0 && !isOver && (
-                    <p className="text-[10px] font-medium text-emerald-600">Faltan {formatCurrency(cat.budget - cat.spent)}</p>
-                  )}
+                
+                <div className="mb-4">
+                  <p className={`text-2xl font-black mb-1 ${isOver ? 'text-rose-600' : 'text-slate-800'}`}>
+                    {formatCurrency(cat.spent)}
+                  </p>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400 font-medium">Límite: {cat.budget > 0 ? formatCurrency(cat.budget) : 'Sin límite'}</span>
+                  </div>
                 </div>
-                <Progress value={cat.spent} max={cat.budget || 1} color={cat.color} size="sm" />
-                {isOver && (
-                  <div className="flex items-center gap-1 mt-2 text-[10px] text-rose-500 font-medium">
-                    <AlertTriangle size={10} /> Excedido
+
+                {cat.budget > 0 && (
+                  <div>
+                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mb-2">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-1000 ${isOver ? 'bg-rose-500' : (pct > 80 ? 'bg-amber-400' : catInfo.hex || 'bg-brand-blue')}`} 
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    {isOver ? (
+                      <p className="text-xs font-bold text-rose-500 flex items-center gap-1"><AlertTriangle size={12}/> Te has excedido</p>
+                    ) : (
+                      <p className="text-[10px] font-semibold text-emerald-600">Quedan {formatCurrency(cat.budget - cat.spent)} disponibles</p>
+                    )}
                   </div>
                 )}
-              </Card>
+              </div>
             );
           })}
           {categoriesData.length === 0 && (
-            <div className="col-span-full p-6 text-center bg-white rounded-xl border border-dashed border-slate-200 text-slate-400 text-sm">
-              Aún no tienes gastos ni presupuestos configurados.
+            <div className="col-span-full p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-sm">
+              Registra transacciones para ver tus categorías aquí.
             </div>
           )}
         </div>
       </div>
 
-      {/* Transactions Table with Tabs */}
-      <Card>
-        <CardHeader title="Historial de Transacciones" />
-        <CardContent>
-          <div className="relative mb-4">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text" placeholder="Buscar transacciones..." value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            />
+      <div className="w-full h-px bg-slate-200/60 my-10"></div>
+
+      {/* TRANSACTIONS HISTORY */}
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-slate-800">
+          Historial de Movimientos
+        </h2>
+        
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full sm:w-96">
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text" placeholder="Buscar movimientos..." value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white shadow-sm"
+              />
+            </div>
+            <Button onClick={() => setShowAddModal(true)} icon={<Plus size={16}/>} className="w-full sm:w-auto rounded-xl">Registrar</Button>
           </div>
 
-          <Tabs defaultValue="all">
+          <Tabs defaultValue="all" className="p-6">
             {({ active, setActive }) => (
               <>
-                <TabsList active={active} setActive={setActive}>
-                  <TabsTrigger value="all" active={active} setActive={setActive}>Todos</TabsTrigger>
-                  <TabsTrigger value="expense" active={active} setActive={setActive}>Gastos</TabsTrigger>
-                  <TabsTrigger value="income" active={active} setActive={setActive}>Ingresos</TabsTrigger>
+                <TabsList active={active} setActive={setActive} className="mb-6 bg-slate-100 p-1 rounded-xl inline-flex">
+                  <TabsTrigger value="all" active={active} setActive={setActive} className="rounded-lg px-6">Todos</TabsTrigger>
+                  <TabsTrigger value="expense" active={active} setActive={setActive} className="rounded-lg px-6">Gastos</TabsTrigger>
+                  <TabsTrigger value="income" active={active} setActive={setActive} className="rounded-lg px-6">Ingresos</TabsTrigger>
                 </TabsList>
 
                 {['all', 'expense', 'income'].map(tab => (
                   <TabsContent key={tab} value={tab} active={active}>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Descripción</TableHead>
-                          <TableHead className="hidden sm:table-cell">Categoría</TableHead>
-                          <TableHead className="hidden sm:table-cell">Fecha</TableHead>
-                          <TableHead className="text-right">Monto</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredTx(tab).map(tx => {
-                          const catInfo = getCategoryInfo(tx.category);
-                          const isIncome = tx.transaction_type === 'ingreso';
-                          return (
-                            <TableRow key={tx.id}>
-                              <TableCell>
-                                <div className="flex items-center gap-2.5">
-                                  <CategoryIcon categoryId={tx.category} size={14} />
-                                  <div>
-                                    <p className="font-medium text-slate-700 text-sm">{tx.description}</p>
-                                    <p className="text-[11px] text-slate-400 sm:hidden">{catInfo.label} · {formatDate(tx.date)}</p>
+                    <div className="overflow-x-auto">
+                      <Table className="min-w-[600px]">
+                        <TableHeader>
+                          <TableRow className="border-b-2 border-slate-100">
+                            <TableHead className="py-4 text-slate-400 uppercase text-[11px] font-bold tracking-wider">Descripción</TableHead>
+                            <TableHead className="py-4 text-slate-400 uppercase text-[11px] font-bold tracking-wider">Categoría</TableHead>
+                            <TableHead className="py-4 text-slate-400 uppercase text-[11px] font-bold tracking-wider">Fecha</TableHead>
+                            <TableHead className="py-4 text-slate-400 uppercase text-[11px] font-bold tracking-wider text-right">Monto</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredTx(tab).map(tx => {
+                            const catInfo = getCategoryInfo(tx.category);
+                            const isIncome = tx.transaction_type === 'ingreso';
+                            return (
+                              <TableRow key={tx.id} className="group hover:bg-slate-50/50 transition-colors border-b border-slate-50 last:border-0">
+                                <TableCell className="py-4">
+                                  <div className="flex items-center gap-4">
+                                    <div className={`p-2.5 rounded-xl ${isIncome ? 'bg-emerald-50 text-emerald-600' : catInfo.bgClass}`}>
+                                      <CategoryIcon categoryId={tx.category} size={18} className={isIncome ? '' : catInfo.color} />
+                                    </div>
+                                    <p className="font-bold text-slate-700 text-sm">{tx.description}</p>
                                   </div>
-                                </div>
-                              </TableCell>
-                              <TableCell className="hidden sm:table-cell">
-                                <Badge variant={isIncome ? 'success' : 'default'}>{catInfo.label}</Badge>
-                              </TableCell>
-                              <TableCell className="hidden sm:table-cell text-slate-500 text-xs">{formatDate(tx.date)}</TableCell>
-                              <TableCell className="text-right">
-                                <span className={`font-bold text-sm flex items-center justify-end gap-1 ${isIncome ? 'text-blue-600' : 'text-slate-800'}`}>
-                                  {isIncome ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                                  {formatCurrency(tx.amount)}
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
+                                </TableCell>
+                                <TableCell className="py-4">
+                                  <Badge variant="outline" className={`font-semibold bg-white ${isIncome ? 'text-emerald-600 border-emerald-200' : ''}`}>
+                                    {catInfo.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="py-4 font-medium text-slate-500 text-xs">
+                                  {formatDate(tx.date)}
+                                </TableCell>
+                                <TableCell className="py-4 text-right">
+                                  <span className={`font-black text-sm flex items-center justify-end gap-1 ${isIncome ? 'text-emerald-500' : 'text-slate-800'}`}>
+                                    {isIncome ? <ArrowUpRight size={16} className="stroke-[3]" /> : <ArrowDownRight size={16} className="text-slate-400" />}
+                                    {isIncome ? '+' : ''}{formatCurrency(tx.amount)}
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
                     {filteredTx(tab).length === 0 && (
-                      <p className="text-center text-slate-400 py-6 text-sm">No hay transacciones registradas.</p>
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <Search size={24} className="text-slate-300" />
+                        </div>
+                        <p className="text-slate-500 font-medium">No se encontraron movimientos.</p>
+                      </div>
                     )}
                   </TabsContent>
                 ))}
               </>
             )}
           </Tabs>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Savings Goals */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-slate-700 flex items-center gap-2">
-            <Target size={18} className="text-blue-600" /> Metas de Ahorro
+      <div className="w-full h-px bg-slate-200/60 my-10"></div>
+
+      {/* METAS DE AHORRO (GOALS) */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <Target size={24} className="text-brand-blue" /> 
+            Mis Metas de Ahorro
           </h2>
-          <Button variant="outline" size="sm" icon={<Plus size={14} />} onClick={() => setShowGoalModal(true)}>
+          <Button variant="outline" size="sm" icon={<Plus size={16} />} onClick={() => setShowGoalModal(true)} className="rounded-xl font-bold border-slate-200">
             Nueva Meta
           </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {goals.map(goal => {
-            const pct = Math.round((goal.current_amount / goal.target_amount) * 100);
+            const pct = Math.min(100, Math.round((goal.current_amount / goal.target_amount) * 100));
             return (
-              <Card key={goal.id} className="p-5" hover>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 bg-blue-100 rounded-xl">
-                      <Target size={18} className="text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-800 text-sm">{goal.title}</h3>
-                      <p className="text-[11px] text-slate-400">{goal.description}</p>
-                    </div>
+              <div key={goal.id} className="group bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden">
+                <div className={`absolute top-0 right-0 w-32 h-32 blur-3xl opacity-20 rounded-full transition-all group-hover:scale-150 ${pct >= 100 ? 'bg-emerald-500' : 'bg-brand-blue'}`}></div>
+                
+                <div className="relative z-10 flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-lg leading-tight">{goal.title}</h3>
+                    {goal.description && <p className="text-xs text-slate-400 mt-1">{goal.description}</p>}
                   </div>
-                  <Badge variant={pct >= 80 ? 'success' : pct >= 40 ? 'warning' : 'info'}>{pct}%</Badge>
+                  <div className={`px-3 py-1.5 rounded-xl font-bold text-sm ${pct >= 100 ? 'bg-emerald-100 text-emerald-600' : 'bg-blue-50 text-brand-blue'}`}>
+                    {pct}%
+                  </div>
                 </div>
-                <Progress value={goal.current_amount} max={goal.target_amount} color="blue" size="md" />
-                <div className="flex justify-between text-xs mt-2 text-slate-500">
-                  <span>Ahorrado: {formatCurrency(goal.current_amount)}</span>
-                  <span>Meta: {formatCurrency(goal.target_amount)}</span>
+
+                <div className="relative z-10 mb-4">
+                  <div className="flex justify-between text-xs font-semibold mb-2">
+                    <span className="text-slate-800">{formatCurrency(goal.current_amount)}</span>
+                    <span className="text-slate-400">Meta: {formatCurrency(goal.target_amount)}</span>
+                  </div>
+                  <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-1000 ${pct >= 100 ? 'bg-emerald-500' : 'bg-brand-blue'}`} 
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  {goal.target_amount > goal.current_amount && (
+                    <p className="text-[10px] font-medium text-slate-500 mt-2 text-right">Faltan {formatCurrency(goal.target_amount - goal.current_amount)}</p>
+                  )}
                 </div>
-                {goal.target_amount > goal.current_amount && (
-                  <p className="text-[10px] font-medium text-blue-600 mt-1 text-right">Faltan {formatCurrency(goal.target_amount - goal.current_amount)}</p>
-                )}
-                <div className="flex items-center justify-between mt-3">
+
+                <div className="relative z-10 flex items-center justify-between mt-6 pt-4 border-t border-slate-50">
                   {goal.deadline ? (
-                    <p className="text-[10px] text-slate-400">Límite: {new Date(goal.deadline + 'T00:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    <div className="text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">
+                      Límite: {new Date(goal.deadline + 'T00:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}
+                    </div>
                   ) : <div />}
-                  <button 
-                    onClick={() => { setFundData({ goalId: goal.id, amount: '' }); setShowAddFundsModal(true); }}
-                    className="text-xs font-semibold text-brand-blue hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                  >
-                    Aportar
-                  </button>
+                  {pct < 100 ? (
+                    <button 
+                      onClick={() => { setFundData({ goalId: goal.id, amount: '' }); setShowAddFundsModal(true); }}
+                      className="text-sm font-bold text-brand-blue hover:text-white bg-blue-50 hover:bg-brand-blue px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
+                    >
+                      Aportar
+                    </button>
+                  ) : (
+                    <span className="text-sm font-bold text-emerald-500 px-4 py-2 bg-emerald-50 rounded-xl">¡Logrado! 🎉</span>
+                  )}
                 </div>
-              </Card>
+              </div>
             );
           })}
           {goals.length === 0 && (
-            <div className="col-span-full p-6 text-center bg-white rounded-xl border border-dashed border-slate-200 text-slate-400 text-sm">
-              Empieza a planificar tu futuro añadiendo tu primera meta de ahorro.
+            <div className="col-span-full p-10 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+              <Target size={40} className="mx-auto text-slate-300 mb-4" />
+              <p className="text-slate-500 font-medium">Aún no has trazado metas de ahorro.</p>
+              <Button onClick={() => setShowGoalModal(true)} className="mt-4" variant="outline">Crear mi primera meta</Button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Add Goal Modal */}
+      {/* --- MODALS (Reused logic, updated styling subtly) --- */}
       <Modal isOpen={showGoalModal} onClose={() => setShowGoalModal(false)} title="Nueva Meta de Ahorro">
         <ModalBody>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre de la meta</label>
-              <input type="text" placeholder="Ej: Computador nuevo" value={newGoal.title}
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Nombre de la meta</label>
+              <input type="text" placeholder="Ej: Viaje a San Andrés" value={newGoal.title}
                 onChange={e => setNewGoal(p => ({ ...p, title: e.target.value }))}
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-slate-50 focus:bg-white transition-colors" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Monto objetivo</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Monto objetivo</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
                 <input type="number" placeholder="0" value={newGoal.target_amount}
                   onChange={e => setNewGoal(p => ({ ...p, target_amount: e.target.value }))}
-                  className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-semibold" />
+                  className="w-full pl-8 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-black bg-slate-50 focus:bg-white transition-colors" />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Descripción (opcional)</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Descripción (opcional)</label>
               <input type="text" placeholder="¿Para qué estás ahorrando?" value={newGoal.description}
                 onChange={e => setNewGoal(p => ({ ...p, description: e.target.value }))}
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-slate-50 focus:bg-white transition-colors" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha Límite (opcional)</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Fecha Límite (opcional)</label>
               <input type="date" value={newGoal.deadline}
                 onChange={e => setNewGoal(p => ({ ...p, deadline: e.target.value }))}
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-slate-50 focus:bg-white transition-colors" />
             </div>
           </div>
         </ModalBody>
         <ModalFooter>
           <Button variant="outline" onClick={() => setShowGoalModal(false)}>Cancelar</Button>
-          <Button onClick={handleAddGoal} disabled={addGoalMutation.isPending}>
+          <Button onClick={handleAddGoal} disabled={addGoalMutation.isPending} className="font-bold bg-brand-blue hover:bg-blue-700">
             {addGoalMutation.isPending ? 'Creando...' : 'Crear Meta'}
           </Button>
         </ModalFooter>
       </Modal>
 
-      {/* Set Budget Modal */}
-      <Modal isOpen={showBudgetModal} onClose={() => setShowBudgetModal(false)} title="Configurar Presupuesto">
+      <Modal isOpen={showBudgetModal} onClose={() => setShowBudgetModal(false)} title="Límite Mensual">
         <ModalBody>
           <div className="space-y-4">
-            <p className="text-sm text-slate-500 mb-4">Establece un límite de gasto mensual para una categoría. Te avisaremos si te pasas.</p>
+            <p className="text-sm text-slate-500 mb-4 font-medium">Establece un límite de gasto mensual para una categoría y mantén tus finanzas saludables.</p>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Categoría</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Categoría</label>
               <select value={budgetForm.category} onChange={e => setBudgetForm(p => ({ ...p, category: e.target.value }))}
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm">
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 focus:bg-white text-sm font-semibold transition-colors cursor-pointer">
                 {Object.entries(iconMap).map(([k, v]) => (
                   <option key={k} value={k}>{v.label}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Límite Mensual</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Presupuesto Asignado</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
                 <input type="number" placeholder="Ej: 200000" value={budgetForm.budget}
                   onChange={e => setBudgetForm(p => ({ ...p, budget: e.target.value }))}
-                  className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-semibold" />
+                  className="w-full pl-8 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-xl font-black bg-slate-50 focus:bg-white transition-colors" />
               </div>
             </div>
           </div>
         </ModalBody>
         <ModalFooter>
           <Button variant="outline" onClick={() => setShowBudgetModal(false)}>Cancelar</Button>
-          <Button onClick={handleSaveBudget} disabled={updateBudgetMutation.isPending}>
+          <Button onClick={handleSaveBudget} disabled={updateBudgetMutation.isPending} className="font-bold bg-brand-blue hover:bg-blue-700">
             {updateBudgetMutation.isPending ? 'Guardando...' : 'Guardar Límite'}
           </Button>
         </ModalFooter>
       </Modal>
 
-      {/* Add Funds Modal */}
       <Modal isOpen={showAddFundsModal} onClose={() => setShowAddFundsModal(false)} title="Aportar a Meta">
         <ModalBody>
-          <div className="space-y-4">
-            <p className="text-sm text-slate-500 mb-4">Ingresa el monto que deseas sumar a esta meta. Se registrará automáticamente como un gasto.</p>
+          <div className="space-y-4 py-2">
+            <div className="p-4 bg-blue-50 rounded-2xl text-blue-800 text-sm font-medium mb-4">
+              Ingresa el monto que deseas sumar a esta meta. Se registrará automáticamente como un <strong>gasto</strong> para ajustar tu balance general.
+            </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Monto del Aporte</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Monto del Aporte</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
                 <input type="number" placeholder="Ej: 50000" value={fundData.amount}
                   onChange={e => setFundData(p => ({ ...p, amount: e.target.value }))}
-                  className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-semibold" />
+                  className="w-full pl-8 pr-4 py-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-blue outline-none text-2xl font-black bg-slate-50 focus:bg-white transition-colors" />
               </div>
             </div>
           </div>
         </ModalBody>
         <ModalFooter>
           <Button variant="outline" onClick={() => setShowAddFundsModal(false)}>Cancelar</Button>
-          <Button onClick={handleAddFunds} disabled={addFundsMutation.isPending}>
+          <Button onClick={handleAddFunds} disabled={addFundsMutation.isPending} className="bg-emerald-500 hover:bg-emerald-600 font-bold text-white border-none">
             {addFundsMutation.isPending ? 'Procesando...' : 'Realizar Aporte'}
           </Button>
         </ModalFooter>
       </Modal>
 
-      {/* Add Transaction Modal */}
       <AddTransactionModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} />
     </div>
   );
@@ -457,54 +528,56 @@ function AddTransactionModal({ isOpen, onClose }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Nueva Transacción">
+    <Modal isOpen={isOpen} onClose={onClose} title="Nuevo Movimiento">
       <ModalBody>
-        <div className="space-y-4">
-          <div className="flex bg-slate-100 p-1 rounded-xl">
+        <div className="space-y-5 py-2">
+          <div className="flex bg-slate-100 p-1 rounded-2xl">
             {['gasto', 'ingreso'].map(t => (
               <button key={t} onClick={() => setTx(p => ({ ...p, transaction_type: t }))}
-                className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition cursor-pointer flex items-center justify-center gap-2
-                  ${tx.transaction_type === t ? (t === 'gasto' ? 'bg-rose-500 text-white shadow' : 'bg-blue-500 text-white shadow') : 'text-slate-500'}`}>
-                {t === 'gasto' ? <><TrendingDown size={16} /> Gasto</> : <><TrendingUp size={16} /> Ingreso</>}
+                className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2
+                  ${tx.transaction_type === t ? (t === 'gasto' ? 'bg-rose-500 text-white shadow-md' : 'bg-emerald-500 text-white shadow-md') : 'text-slate-500 hover:bg-slate-200'}`}>
+                {t === 'gasto' ? <><TrendingDown size={18} /> Gasto</> : <><TrendingUp size={18} /> Ingreso</>}
               </button>
             ))}
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Monto</label>
+            <label className="block text-sm font-bold text-slate-700 mb-1.5">Monto</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
               <input type="number" placeholder="0" value={tx.amount}
                 onChange={e => setTx(p => ({ ...p, amount: e.target.value }))}
-                className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg font-semibold" />
+                className="w-full pl-8 pr-4 py-4 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-brand-blue outline-none text-2xl font-black bg-slate-50 focus:bg-white transition-colors" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Categoría</label>
+              <select value={tx.category} onChange={e => setTx(p => ({ ...p, category: e.target.value }))}
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-blue outline-none bg-slate-50 focus:bg-white text-sm font-semibold transition-colors cursor-pointer">
+                {Object.entries(iconMap).map(([k, v]) => (
+                  <option key={k} value={k}>{v.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Fecha</label>
+              <input type="date" value={tx.date}
+                onChange={e => setTx(p => ({ ...p, date: e.target.value }))}
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-blue outline-none bg-slate-50 focus:bg-white text-sm font-semibold transition-colors" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Categoría</label>
-            <select value={tx.category} onChange={e => setTx(p => ({ ...p, category: e.target.value }))}
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm">
-              {Object.entries(iconMap).map(([k, v]) => (
-                <option key={k} value={k}>{v.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
+            <label className="block text-sm font-bold text-slate-700 mb-1.5">Descripción</label>
             <input type="text" placeholder="Ej: Almuerzo cafetería" value={tx.description}
               onChange={e => setTx(p => ({ ...p, description: e.target.value }))}
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha</label>
-            <input type="date" value={tx.date}
-              onChange={e => setTx(p => ({ ...p, date: e.target.value }))}
-              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-blue outline-none bg-slate-50 focus:bg-white text-sm transition-colors" />
           </div>
         </div>
       </ModalBody>
       <ModalFooter>
-        <Button variant="outline" onClick={onClose}>Cancelar</Button>
-        <Button onClick={handleSave} disabled={txMutation.isPending}>
-          {txMutation.isPending ? 'Guardando...' : 'Guardar'}
+        <Button variant="outline" onClick={onClose} className="rounded-xl">Cancelar</Button>
+        <Button onClick={handleSave} disabled={txMutation.isPending} className="font-bold bg-brand-blue hover:bg-blue-700 rounded-xl px-8">
+          {txMutation.isPending ? 'Guardando...' : 'Guardar Movimiento'}
         </Button>
       </ModalFooter>
     </Modal>

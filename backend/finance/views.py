@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Sum
 import datetime
-from .models import Transaction, Goal, CategoryBudget
-from .serializers import TransactionSerializer, GoalSerializer, CategoryBudgetSerializer
+from .models import Transaction, Goal, CategoryBudget, Subscription
+from .serializers import TransactionSerializer, GoalSerializer, CategoryBudgetSerializer, SubscriptionSerializer
 
 class DashboardSummaryView(views.APIView):
     permission_classes = [IsAuthenticated]
@@ -79,6 +79,9 @@ class DashboardSummaryView(views.APIView):
                 "gastos": gastos_mes
             })
 
+        # Subscriptions
+        subscriptions = Subscription.objects.filter(user=user, is_active=True)[:3]
+
         return Response({
             "financialSummary": {
                 "balance": balance,
@@ -91,7 +94,8 @@ class DashboardSummaryView(views.APIView):
             "recentTransactions": TransactionSerializer(recent_txs, many=True).data,
             "savingsGoals": GoalSerializer(goals, many=True).data,
             "categories": categories_data,
-            "monthlyData": monthly_data
+            "monthlyData": monthly_data,
+            "activeSubscriptions": SubscriptionSerializer(subscriptions, many=True).data
         })
 
 class TransactionListCreateView(generics.ListCreateAPIView):
@@ -105,8 +109,11 @@ class TransactionListCreateView(generics.ListCreateAPIView):
         serializer.save(user=self.request.user)
         try:
             from education.services import evaluate_user_challenges
-            evaluate_user_challenges(self.request.user)
-        except ImportError:
+            evaluate_user_challenges(
+                self.request.user,
+                trigger_hints=['register_transactions', 'daily_transaction', 'savings_rate_10', 'savings_rate_20', 'no_small_expenses_7']
+            )
+        except Exception:
             pass
 
 from django.shortcuts import get_object_or_404
@@ -123,8 +130,11 @@ class GoalListCreateView(generics.ListCreateAPIView):
         serializer.save(user=self.request.user)
         try:
             from education.services import evaluate_user_challenges
-            evaluate_user_challenges(self.request.user)
-        except ImportError:
+            evaluate_user_challenges(
+                self.request.user,
+                trigger_hints=['create_goal']
+            )
+        except Exception:
             pass
 
 from decimal import Decimal, InvalidOperation
@@ -158,11 +168,14 @@ class GoalAddFundsView(views.APIView):
                 description=f"Aporte a meta: {goal.title}",
                 date=datetime.date.today()
             )
-            
+
         try:
             from education.services import evaluate_user_challenges
-            evaluate_user_challenges(request.user)
-        except ImportError:
+            evaluate_user_challenges(
+                request.user,
+                trigger_hints=['fund_goal', 'emergency_fund_100k', 'register_transactions']
+            )
+        except Exception:
             pass
 
         return Response({"status": "success", "current_amount": goal.current_amount})
@@ -184,9 +197,204 @@ class CategoryBudgetListCreateView(generics.ListCreateAPIView):
             budget_obj.save()
         else:
             serializer.save(user=self.request.user)
-            
+
         try:
             from education.services import evaluate_user_challenges
-            evaluate_user_challenges(self.request.user)
-        except ImportError:
+            evaluate_user_challenges(
+                self.request.user,
+                trigger_hints=['set_budget']
+            )
+        except Exception:
             pass
+
+class SubscriptionListCreateView(generics.ListCreateAPIView):
+    serializer_class = SubscriptionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Subscription.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+        try:
+            from education.services import evaluate_user_challenges
+            evaluate_user_challenges(
+                self.request.user,
+                trigger_hints=['add_subscription']
+            )
+        except Exception:
+            pass
+
+class SubscriptionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = SubscriptionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Subscription.objects.filter(user=self.request.user)
+
+
+class InsightsView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        today = datetime.date.today()
+        cur_y, cur_m = today.year, today.month
+
+        # Previous month
+        if cur_m == 1:
+            prev_y, prev_m = cur_y - 1, 12
+        else:
+            prev_y, prev_m = cur_y, cur_m - 1
+
+        months_es = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
+                     7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'}
+
+        # --- 1. Monthly comparison by category ---
+        monthly_comparison = []
+        for cat_id, cat_name in Transaction.CATEGORY_CHOICES:
+            cur_spent = Transaction.objects.filter(
+                user=user, transaction_type='gasto', category=cat_id,
+                date__year=cur_y, date__month=cur_m
+            ).aggregate(total=Sum('amount'))['total'] or 0
+
+            prev_spent = Transaction.objects.filter(
+                user=user, transaction_type='gasto', category=cat_id,
+                date__year=prev_y, date__month=prev_m
+            ).aggregate(total=Sum('amount'))['total'] or 0
+
+            if cur_spent > 0 or prev_spent > 0:
+                diff = float(cur_spent) - float(prev_spent)
+                pct_change = round((diff / float(prev_spent)) * 100, 1) if prev_spent > 0 else None
+                monthly_comparison.append({
+                    'category': cat_id,
+                    'name': cat_name,
+                    'current': float(cur_spent),
+                    'prev': float(prev_spent),
+                    'diff': round(diff, 2),
+                    'pct_change': pct_change
+                })
+
+        monthly_comparison.sort(key=lambda x: x['current'], reverse=True)
+
+        # --- 2. Alerts ---
+        alerts = []
+        day_of_month = today.day
+        days_in_month = 30  # approximation
+        month_progress_pct = (day_of_month / days_in_month) * 100
+
+        # Budget alerts
+        for cat_id, cat_name in Transaction.CATEGORY_CHOICES:
+            budget_obj = CategoryBudget.objects.filter(user=user, category=cat_id).first()
+            if not budget_obj or budget_obj.budget <= 0:
+                continue
+            spent = Transaction.objects.filter(
+                user=user, transaction_type='gasto', category=cat_id,
+                date__year=cur_y, date__month=cur_m
+            ).aggregate(total=Sum('amount'))['total'] or 0
+            usage_pct = (float(spent) / float(budget_obj.budget)) * 100
+            if usage_pct >= 100:
+                alerts.append({
+                    'type': 'danger', 'icon': 'AlertTriangle',
+                    'title': f'¡Presupuesto de {cat_name} agotado!',
+                    'message': f'Ya superaste tu límite mensual de {cat_name}. Considera reducir gastos en esta categoría.'
+                })
+            elif usage_pct >= 75:
+                alerts.append({
+                    'type': 'warning', 'icon': 'AlertCircle',
+                    'title': f'{cat_name}: {round(usage_pct)}% usado',
+                    'message': f'Llevas el {round(usage_pct)}% de tu presupuesto de {cat_name} y el mes lleva {day_of_month} días.'
+                })
+
+        # Goal alerts
+        goals = Goal.objects.filter(user=user, is_completed=False)
+        for goal in goals:
+            pct = (float(goal.current_amount) / float(goal.target_amount)) * 100 if goal.target_amount > 0 else 0
+            remaining = float(goal.target_amount) - float(goal.current_amount)
+            if pct >= 90:
+                alerts.append({
+                    'type': 'success', 'icon': 'Trophy',
+                    'title': f'¡Casi logras tu meta "{goal.title}"!',
+                    'message': f'Estás al {round(pct)}% de tu objetivo. Solo faltan ${remaining:,.0f} para completarla. ¡Sigue así!'
+                })
+            elif pct >= 50:
+                alerts.append({
+                    'type': 'info', 'icon': 'Target',
+                    'title': f'Meta "{goal.title}" a la mitad',
+                    'message': f'Llevas el {round(pct)}% de tu meta. Faltan ${remaining:,.0f} para alcanzarla.'
+                })
+
+        # Month comparison alert
+        total_cur = Transaction.objects.filter(
+            user=user, transaction_type='gasto',
+            date__year=cur_y, date__month=cur_m
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        total_prev = Transaction.objects.filter(
+            user=user, transaction_type='gasto',
+            date__year=prev_y, date__month=prev_m
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        if total_prev > 0 and total_cur > 0:
+            diff_total = float(total_cur) - float(total_prev)
+            if diff_total > 0:
+                pct_diff = round((diff_total / float(total_prev)) * 100, 1)
+                if pct_diff >= 15:
+                    alerts.append({
+                        'type': 'warning', 'icon': 'TrendingUp',
+                        'title': f'Gastos {pct_diff}% más altos que {months_es[prev_m]}',
+                        'message': f'Este mes llevas ${diff_total:,.0f} más en gastos en comparación con el mes anterior.'
+                    })
+            elif diff_total < 0:
+                alerts.append({
+                    'type': 'success', 'icon': 'TrendingDown',
+                    'title': f'¡Gastos más bajos que {months_es[prev_m]}!',
+                    'message': f'Este mes llevas ${abs(diff_total):,.0f} menos en gastos. ¡Excelente control!'
+                })
+
+        # --- 3. Tip of the day ---
+        top_category = monthly_comparison[0] if monthly_comparison else None
+        tips_map = {
+            'alimentacion': ('Alimentación es tu mayor gasto este mes', 'Cocinar en casa 2 días a la semana puede ahorrarte hasta $80.000 mensuales.'),
+            'transporte': ('Transporte ocupa gran parte de tu presupuesto', 'Considera la bicicleta, caminar o compartir transporte para reducir costos.'),
+            'entretenimiento': ('Entretenimiento es tu categoría más cara', 'Busca opciones gratuitas o económicas: parques, museos con descuento estudiantil, streaming compartido.'),
+            'materiales': ('Inviertes mucho en materiales académicos', 'Revisa bibliotecas universitarias, PDFs gratuitos o grupos de intercambio de libros.'),
+            'servicios': ('Los servicios representan tu mayor egreso', 'Revisa si tienes servicios duplicados o suscripciones que no estás usando.'),
+        }
+        default_tip = ('Sigue monitoreando tus finanzas', 'La clave del éxito financiero es la constancia. Registra cada gasto, por pequeño que sea.')
+        if top_category:
+            tip_title, tip_msg = tips_map.get(top_category['category'], default_tip)
+        else:
+            tip_title, tip_msg = default_tip
+
+        tip_of_the_day = {'title': tip_title, 'suggestion': tip_msg, 'icon': 'Lightbulb'}
+
+        # --- 4. Savings trend ---
+        cur_income = Transaction.objects.filter(
+            user=user, transaction_type='ingreso',
+            date__year=cur_y, date__month=cur_m
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        prev_income = Transaction.objects.filter(
+            user=user, transaction_type='ingreso',
+            date__year=prev_y, date__month=prev_m
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        cur_rate = round(((float(cur_income) - float(total_cur)) / float(cur_income)) * 100, 1) if cur_income > 0 else 0
+        prev_rate = round(((float(prev_income) - float(total_prev)) / float(prev_income)) * 100, 1) if prev_income > 0 else 0
+        trend = 'up' if cur_rate >= prev_rate else 'down'
+
+        return Response({
+            'monthly_comparison': monthly_comparison,
+            'alerts': alerts[:6],  # max 6 alerts
+            'tip_of_the_day': tip_of_the_day,
+            'savings_trend': {
+                'current_month_rate': cur_rate,
+                'prev_month_rate': prev_rate,
+                'trend': trend,
+                'current_month_name': months_es[cur_m],
+                'prev_month_name': months_es[prev_m],
+            },
+            'top_expense_category': {
+                'name': top_category['name'] if top_category else None,
+                'amount': top_category['current'] if top_category else 0
+            }
+        })
