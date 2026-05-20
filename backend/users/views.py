@@ -58,10 +58,26 @@ class NotificationListView(generics.ListAPIView):
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
-        # Automatically mark all as read when listed
-        notifications = Notification.objects.filter(user=self.request.user)
-        notifications.filter(is_read=False).update(is_read=True)
-        return notifications
+        return Notification.objects.filter(user=self.request.user)
+
+class MarkNotificationReadView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            notification = Notification.objects.get(pk=pk, user=request.user)
+            notification.is_read = True
+            notification.save(update_fields=['is_read'])
+            return Response({"status": "success", "detail": "Notificación marcada como leída."})
+        except Notification.DoesNotExist:
+            return Response({"detail": "Notificación no encontrada."}, status=status.HTTP_404_NOT_FOUND)
+
+class MarkAllNotificationsReadView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response({"status": "success", "detail": "Todas las notificaciones han sido marcadas como leídas."})
 
 from .models import ContactMessage
 from .serializers import ContactMessageSerializer

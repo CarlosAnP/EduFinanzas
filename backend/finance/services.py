@@ -1,6 +1,8 @@
 import datetime
 from django.utils import timezone
-from .models import Transaction, Subscription, Credit
+from django.db.models import Sum
+from .models import Transaction, Subscription, Credit, CategoryBudget
+from users.models import Notification
 
 def add_months(sourcedate, months):
     """
@@ -104,4 +106,158 @@ def process_recurring_payments(user):
         except Exception:
             pass
 
+    # 4. Procesar y evaluar alertas de vencimientos de créditos, suscripciones y gastos mensuales
+    try:
+        check_and_create_financial_alerts(user)
+    except Exception:
+        pass
+
     return transactions_created
+
+def check_and_create_financial_alerts(user):
+    """
+    Evalúa alertas financieras para un usuario:
+    1. Créditos próximos (cuotas que vencen en <= 3 días).
+    2. Suscripciones próximas (renovaciones en <= 3 días).
+    3. Relación de gastos mensuales alta (gastos del mes >= 85% de ingresos del mes).
+    Aplica controles anti-spam estrictos.
+    """
+    today = timezone.localdate()
+
+    # 1. Créditos Próximos (vencimiento <= 3 días)
+    active_credits = Credit.objects.filter(user=user, is_active=True, next_payment_date__isnull=False)
+    for credit in active_credits:
+        days_left = (credit.next_payment_date - today).days
+        if 0 <= days_left <= 3:
+            # Check anti-spam: already notified for this payment date?
+            notif_exists = Notification.objects.filter(
+                user=user,
+                type='warning',
+                title="Vencimiento de Crédito Próximo",
+                message__contains=credit.name
+            ).filter(message__contains=str(credit.next_payment_date)).exists()
+            
+            if not notif_exists:
+                Notification.objects.create(
+                    user=user,
+                    type='warning',
+                    title="Vencimiento de Crédito Próximo",
+                    message=f"Se aproxima el pago de la cuota de tu crédito '{credit.name}' el próximo {credit.next_payment_date} por un valor de ${credit.installment_amount}."
+                )
+
+    # 2. Suscripciones Próximas (vencimiento <= 3 días)
+    active_subs = Subscription.objects.filter(user=user, is_active=True, next_billing_date__isnull=False)
+    for sub in active_subs:
+        days_left = (sub.next_billing_date - today).days
+        if 0 <= days_left <= 3:
+            # Check anti-spam: already notified for this billing date?
+            notif_exists = Notification.objects.filter(
+                user=user,
+                type='warning',
+                title="Vencimiento de Suscripción Próximo",
+                message__contains=sub.name
+            ).filter(message__contains=str(sub.next_billing_date)).exists()
+            
+            if not notif_exists:
+                Notification.objects.create(
+                    user=user,
+                    type='warning',
+                    title="Vencimiento de Suscripción Próximo",
+                    message=f"Se aproxima la renovación de tu suscripción '{sub.name}' el próximo {sub.next_billing_date} por un valor de ${sub.amount}."
+                )
+
+    # 3. Relación de gastos mensuales alta (gastos del mes >= 85% de ingresos del mes)
+    income = Transaction.objects.filter(
+        user=user,
+        transaction_type='ingreso',
+        date__year=today.year,
+        date__month=today.month
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    expenses = Transaction.objects.filter(
+        user=user,
+        transaction_type='gasto',
+        date__year=today.year,
+        date__month=today.month
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    if income > 0:
+        ratio = expenses / income
+        if ratio >= 0.85:
+            # Anti-spam check: one alert per month
+            month_year_str = f"{today.month}/{today.year}"
+            notif_exists = Notification.objects.filter(
+                user=user,
+                type='warning',
+                title="¡Alerta de Gastos Elevados!",
+                message__contains=month_year_str
+            ).exists()
+            
+            if not notif_exists:
+                percentage = int(ratio * 100)
+                Notification.objects.create(
+                    user=user,
+                    type='warning',
+                    title="¡Alerta de Gastos Elevados!",
+                    message=f"Has gastado el {percentage}% de tus ingresos de este mes ({month_year_str}). Te recomendamos revisar tu presupuesto y evitar gastos hormiga."
+                )
+
+def evaluate_budget_alerts(user, category):
+    """
+    Evalúa si los gastos acumulados en una categoría en el mes corriente superan
+    el 75% o el 100% de su presupuesto establecido, y crea las notificaciones respectivas.
+    """
+    today = timezone.localdate()
+    budget_obj = CategoryBudget.objects.filter(user=user, category=category).first()
+    if not budget_obj or budget_obj.budget <= 0:
+        return
+
+    # Total spent in category this month
+    spent = Transaction.objects.filter(
+        user=user,
+        transaction_type='gasto',
+        category=category,
+        date__year=today.year,
+        date__month=today.month
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    ratio = spent / budget_obj.budget
+    category_display = dict(Transaction.CATEGORY_CHOICES).get(category, category)
+    month_year_str = f"{today.month}/{today.year}"
+
+    # 1. 100% threshold
+    if ratio >= 1.0:
+        # Check if 100% notification already exists for this category/month
+        notif_exists = Notification.objects.filter(
+            user=user,
+            type='error',
+            title=f"Presupuesto Excedido: {category_display}",
+            message__contains=month_year_str
+        ).exists()
+        
+        if not notif_exists:
+            Notification.objects.create(
+                user=user,
+                type='error',
+                title=f"Presupuesto Excedido: {category_display}",
+                message=f"Has alcanzado o superado el 100% de tu presupuesto para {category_display} este mes. Has gastado ${spent} de un límite de ${budget_obj.budget} ({month_year_str})."
+            )
+            
+    # 2. 75% threshold
+    elif ratio >= 0.75:
+        # Check if 75% notification already exists for this category/month
+        notif_exists = Notification.objects.filter(
+            user=user,
+            type='warning',
+            title=f"Presupuesto al Límite: {category_display}",
+            message__contains=month_year_str
+        ).exists()
+        
+        if not notif_exists:
+            percentage = int(ratio * 100)
+            Notification.objects.create(
+                user=user,
+                type='warning',
+                title=f"Presupuesto al Límite: {category_display}",
+                message=f"Has gastado el {percentage}% de tu presupuesto para {category_display} este mes (${spent} de ${budget_obj.budget}) ({month_year_str})."
+            )

@@ -3,7 +3,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     RegisterView, UserProfileView,
     OnboardingProfileView, NotificationListView, ContactMessageCreateView,
-    AdminUserListView, AdminMessageListView, ping_view, SelfPromoteAdminView
+    AdminUserListView, AdminMessageListView, ping_view, SelfPromoteAdminView,
+    MarkNotificationReadView, MarkAllNotificationsReadView
 )
 
 urlpatterns = [
@@ -16,6 +17,8 @@ urlpatterns = [
     path('profile/', UserProfileView.as_view(), name='profile'),
     path('onboarding/', OnboardingProfileView.as_view(), name='onboarding'),
     path('notifications/', NotificationListView.as_view(), name='notifications'),
+    path('notifications/<int:pk>/read/', MarkNotificationReadView.as_view(), name='notification_read'),
+    path('notifications/read-all/', MarkAllNotificationsReadView.as_view(), name='notifications_read_all'),
     
     # Public
     path('contact/', ContactMessageCreateView.as_view(), name='contact_message'),

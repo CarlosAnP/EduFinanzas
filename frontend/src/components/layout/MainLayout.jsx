@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Wallet, BookOpen, LogOut, TrendingUp, Flame, Star, Loader2, Repeat, Calculator, Lightbulb, X, ChevronRight, Sparkles } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { Home, Wallet, BookOpen, LogOut, TrendingUp, Flame, Star, Loader2, Repeat, Calculator, Lightbulb, X, ChevronRight, Sparkles, Bell, CheckCheck, AlertTriangle, Info, CheckCircle, ShieldAlert } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/axios';
 import { useEffect, useState } from 'react';
 
@@ -16,6 +16,8 @@ const navItems = [
 export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const { data: user, isLoading, isError } = useQuery({
     queryKey: ['userProfile'],
@@ -24,6 +26,40 @@ export default function MainLayout() {
       return response.data;
     },
     retry: 1,
+  });
+
+  const { data: notifications = [], refetch: refetchNotifications } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const response = await api.get('/users/notifications/');
+      return response.data;
+    },
+    refetchInterval: 15000, // Query every 15s to get real-time alerts!
+  });
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const unreadNotifications = notifications.filter(n => !n.is_read);
+
+  const markReadMutation = useMutation({
+    mutationFn: async (id) => {
+      const response = await api.post(`/users/notifications/${id}/read/`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+    }
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: async () => {
+      const response = await api.post('/users/notifications/read-all/');
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+    }
   });
 
   useEffect(() => {
@@ -46,6 +82,145 @@ export default function MainLayout() {
     );
   }
 
+  const renderNotificationBell = (isMobile) => {
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setShowNotifications(!showNotifications)}
+          className={`relative p-2 rounded-xl transition-all duration-200 cursor-pointer text-slate-400 hover:text-slate-600 hover:bg-slate-100 ${
+            showNotifications ? 'bg-slate-100 text-slate-600' : ''
+          }`}
+          title="Notificaciones"
+        >
+          <Bell size={isMobile ? 18 : 20} className={unreadCount > 0 ? 'animate-wiggle' : ''} />
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 w-4.5 h-4.5 bg-rose-500 rounded-full text-[9px] font-black text-white flex items-center justify-center border-2 border-white shadow-sm scale-110 animate-bounce">
+              {unreadCount}
+            </span>
+          )}
+        </button>
+
+        {showNotifications && (
+          <>
+            {/* Click outside overlay */}
+            <div 
+              className="fixed inset-0 z-40 cursor-default" 
+              onClick={() => setShowNotifications(false)}
+            />
+            
+            {/* Popover Card */}
+            <div className={`absolute z-50 w-80 bg-white/95 backdrop-blur-md border border-slate-200/85 rounded-2xl p-4 shadow-2xl animate-fade-in text-left ${
+              isMobile 
+                ? 'top-12 right-0' 
+                : 'top-12 -left-2'
+            }`}>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-extrabold text-slate-800 text-sm">Notificaciones</span>
+                  {unreadCount > 0 && (
+                    <span className="bg-blue-50 text-brand-blue text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                      {unreadCount} pnd
+                    </span>
+                  )}
+                </div>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={() => {
+                      markAllReadMutation.mutate();
+                    }}
+                    className="text-[10px] text-brand-blue hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <CheckCheck size={12} />
+                    Marcar todo leído
+                  </button>
+                )}
+              </div>
+
+              <div className="max-h-72 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
+                {unreadNotifications.length === 0 ? (
+                  <div className="py-8 flex flex-col items-center justify-center text-center">
+                    <div className="w-12 h-12 bg-slate-50 border border-slate-100 text-slate-300 rounded-full flex items-center justify-center mb-3">
+                      <Bell size={20} className="opacity-50" />
+                    </div>
+                    <p className="text-xs text-slate-500 font-bold">¡Todo al día!</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">No tienes alertas financieras pendientes.</p>
+                  </div>
+                ) : (
+                  unreadNotifications.slice(0, 8).map((n) => {
+                    const isWarning = n.type === 'warning';
+                    const isError = n.type === 'error';
+                    const isSuccess = n.type === 'success';
+                    
+                    return (
+                      <div
+                        key={n.id}
+                        onClick={() => {
+                          if (!n.is_read) {
+                            markReadMutation.mutate(n.id);
+                          }
+                        }}
+                        className={`p-3 rounded-xl border text-left transition-all duration-200 relative group ${
+                          !n.is_read 
+                            ? 'bg-blue-50/40 border-blue-100/70 hover:bg-blue-50/70 cursor-pointer' 
+                            : 'bg-slate-50/50 border-slate-100 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <div className={`p-1.5 rounded-lg shrink-0 ${
+                            isError 
+                              ? 'bg-rose-50 text-rose-500' 
+                              : isWarning 
+                                ? 'bg-amber-50 text-amber-500' 
+                                : isSuccess 
+                                  ? 'bg-emerald-50 text-emerald-500' 
+                                  : 'bg-blue-50 text-brand-blue'
+                          }`}>
+                            {isError ? (
+                              <ShieldAlert size={14} />
+                            ) : isWarning ? (
+                              <AlertTriangle size={14} />
+                            ) : isSuccess ? (
+                              <CheckCircle size={14} />
+                            ) : (
+                              <Info size={14} />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <p className={`text-xs font-bold truncate ${
+                                !n.is_read ? 'text-slate-800' : 'text-slate-500'
+                              }`}>
+                                {n.title}
+                              </p>
+                              {!n.is_read && (
+                                <span className="w-1.5 h-1.5 bg-brand-blue rounded-full shrink-0 animate-pulse" />
+                              )}
+                            </div>
+                            <p className="text-[10px] text-slate-500 font-medium leading-relaxed mt-0.5">
+                              {n.message}
+                            </p>
+                            <span className="text-[8px] text-slate-400 font-semibold block mt-1.5">
+                              {new Date(n.date).toLocaleDateString('es-CO', {
+                                day: 'numeric',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   const initial1 = user.first_name ? user.first_name[0] : 'U';
   const initial2 = user.last_name ? user.last_name[0] : '';
 
@@ -58,10 +233,11 @@ export default function MainLayout() {
             <div className="w-10 h-10 bg-brand-blue rounded-xl flex items-center justify-center shadow-md">
               <TrendingUp size={20} className="text-white" />
             </div>
-            <div>
+            <div className="flex-1">
               <h1 className="text-lg font-bold text-slate-800 tracking-tight">EduFinanzas</h1>
               <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Smart Money</p>
             </div>
+            {renderNotificationBell(false)}
           </div>
         </div>
 
@@ -147,6 +323,7 @@ export default function MainLayout() {
           <span className="font-bold text-slate-800">EduFinanzas</span>
         </div>
         <div className="flex items-center gap-2">
+          {renderNotificationBell(true)}
           <button onClick={handleLogout} className="text-slate-400 p-1 mr-1">
             <LogOut size={16} />
           </button>

@@ -141,7 +141,12 @@ class TransactionListCreateView(generics.ListCreateAPIView):
         return queryset
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        instance = serializer.save(user=self.request.user)
+        try:
+            from .services import evaluate_budget_alerts
+            evaluate_budget_alerts(self.request.user, instance.category)
+        except Exception:
+            pass
         try:
             from education.services import evaluate_user_challenges
             evaluate_user_challenges(
@@ -162,7 +167,12 @@ class TransactionDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance = self.get_object()
         if timezone.now() - instance.created_at > timedelta(days=2):
             raise ValidationError("No se pueden modificar movimientos registrados hace más de 2 días.")
-        serializer.save()
+        instance = serializer.save()
+        try:
+            from .services import evaluate_budget_alerts
+            evaluate_budget_alerts(self.request.user, instance.category)
+        except Exception:
+            pass
         # Re-evaluate challenges after edit
         try:
             from education.services import evaluate_user_challenges

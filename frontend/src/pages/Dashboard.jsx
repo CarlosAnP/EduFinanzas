@@ -142,17 +142,27 @@ export default function Dashboard() {
       </div>
 
       {/* Alerts */}
-      {notifications.filter(n => n.type === 'warning').map(n => (
-        <div key={n.id} className="bg-gradient-to-r from-amber-50 to-amber-100/50 border border-amber-200 p-5 rounded-2xl flex items-start gap-4 shadow-sm animate-fade-in">
-          <div className="p-2 bg-amber-100 rounded-xl">
-            <AlertCircle className="text-amber-600 shrink-0" size={24} />
+      {notifications.filter(n => !n.is_read && (n.type === 'warning' || n.type === 'error')).map(n => {
+        const isError = n.type === 'error';
+        return (
+          <div 
+            key={n.id} 
+            className={`bg-gradient-to-r ${
+              isError 
+                ? 'from-rose-50 to-rose-100/50 border-rose-200' 
+                : 'from-amber-50 to-amber-100/50 border-amber-200'
+            } border p-5 rounded-2xl flex items-start gap-4 shadow-sm animate-fade-in`}
+          >
+            <div className={`p-2 rounded-xl ${isError ? 'bg-rose-100' : 'bg-amber-100'}`}>
+              <AlertCircle className={isError ? 'text-rose-600 shrink-0' : 'text-amber-600 shrink-0'} size={24} />
+            </div>
+            <div className="flex-1 pt-1">
+              <h4 className={`font-bold text-sm mb-1 ${isError ? 'text-rose-900' : 'text-amber-900'}`}>{n.title}</h4>
+              <p className={isError ? 'text-rose-700 text-sm' : 'text-amber-700 text-sm'}>{n.message}</p>
+            </div>
           </div>
-          <div className="flex-1 pt-1">
-            <h4 className="text-amber-900 font-bold text-sm mb-1">{n.title}</h4>
-            <p className="text-amber-700 text-sm">{n.message}</p>
-          </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
