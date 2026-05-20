@@ -128,3 +128,64 @@ class CreditTests(APITestCase):
         self.assertIsNotNone(tx)
         self.assertEqual(tx.amount, 5000.00)
         self.assertEqual(tx.description, 'Pago cuota 2/2 - Crédito: Préstamo Corto')
+
+    def test_create_advanced_credit_with_skip_disbursement(self):
+        """
+        Verifica que al registrar un crédito avanzado con skip_disbursement=True,
+        se calcule proporcionalmente el saldo vivo, se mueva la próxima cuota y no haya desembolso.
+        """
+        url = '/api/finance/credits/'
+        data = {
+            'name': 'Crédito Moto En Curso',
+            'total_amount': '120000.00',
+            'installment_amount': '10000.00',
+            'total_installments': 12,
+            'paid_installments': 3,  # 3 cuotas pagadas
+            'interest_rate': '0.00',
+            'start_date': '2026-05-20',
+            'category': 'transporte',
+            'skip_disbursement': True
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        credit = Credit.objects.get(id=response.data['id'])
+        # Saldo vivo esperado: 10000 * (12 - 3) = 90000
+        self.assertEqual(credit.remaining_amount, 90000.00)
+        self.assertEqual(credit.paid_installments, 3)
+        self.assertEqual(credit.is_active, True)
+        # Próxima fecha esperada: start_date + 4 meses
+        self.assertEqual(credit.next_payment_date, datetime.date(2026, 9, 20))
+
+        # Verificar que NO se generó ninguna transacción de ingreso (skip_disbursement=True)
+        tx = Transaction.objects.filter(user=self.user, transaction_type='ingreso').first()
+        self.assertIsNone(tx)
+
+    def test_create_already_fully_paid_credit(self):
+        """
+        Verifica que si un crédito se registra con cuotas pagadas >= totales,
+        se guarde como inactivo, saldo 0 y sin fecha de cobro futura.
+        """
+        url = '/api/finance/credits/'
+        data = {
+            'name': 'Crédito Finalizado',
+            'total_amount': '120000.00',
+            'installment_amount': '10000.00',
+            'total_installments': 12,
+            'paid_installments': 12,  # Completamente pago
+            'interest_rate': '0.00',
+            'start_date': '2026-05-20',
+            'category': 'otro',
+            'skip_disbursement': True
+        }
+
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        credit = Credit.objects.get(id=response.data['id'])
+        self.assertEqual(credit.remaining_amount, 0.00)
+        self.assertEqual(credit.paid_installments, 12)
+        self.assertEqual(credit.is_active, False)
+        self.assertIsNone(credit.next_payment_date)
+

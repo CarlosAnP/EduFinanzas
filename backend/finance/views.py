@@ -314,25 +314,49 @@ class CreditListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         total_amount = serializer.validated_data['total_amount']
+        installment_amount = serializer.validated_data['installment_amount']
+        total_installments = serializer.validated_data['total_installments']
+        paid_installments = serializer.validated_data.get('paid_installments', 0)
+        skip_disbursement = serializer.validated_data.pop('skip_disbursement', False)
         start_date = serializer.validated_data['start_date']
-        next_pmt_date = add_months(start_date, 1)
+
+        is_active = True
+        if paid_installments > 0:
+            remaining_amount = installment_amount * (total_installments - paid_installments)
+            if remaining_amount < 0:
+                remaining_amount = 0
+            
+            # Próxima fecha de cobro: se desplaza por las cuotas ya pagadas + 1
+            next_pmt_date = add_months(start_date, paid_installments + 1)
+            
+            # Si ya se cubrió todo o se pagó todo, se marca como inactivo
+            if paid_installments >= total_installments or remaining_amount <= 0:
+                is_active = False
+                remaining_amount = 0
+                next_pmt_date = None
+        else:
+            remaining_amount = total_amount
+            next_pmt_date = add_months(start_date, 1)
 
         # Guardar crédito inicializando saldo pendiente y primer cobro
         credit = serializer.save(
             user=self.request.user,
-            remaining_amount=total_amount,
-            next_payment_date=next_pmt_date
+            remaining_amount=remaining_amount,
+            next_payment_date=next_pmt_date,
+            is_active=is_active
         )
 
-        # Generar automáticamente la transacción de ingreso por desembolso
-        Transaction.objects.create(
-            user=self.request.user,
-            transaction_type='ingreso',
-            amount=total_amount,
-            category=serializer.validated_data.get('category', 'otro'),
-            description=f"Desembolso de crédito: {credit.name}",
-            date=start_date
-        )
+        # Generar automáticamente la transacción de ingreso por desembolso (si no se omitió)
+        if not skip_disbursement:
+            Transaction.objects.create(
+                user=self.request.user,
+                transaction_type='ingreso',
+                amount=total_amount,
+                category=serializer.validated_data.get('category', 'otro'),
+                description=f"Desembolso de crédito: {credit.name}",
+                date=start_date
+            )
+
 
         # Evaluar misiones
         try:

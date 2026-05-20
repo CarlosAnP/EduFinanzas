@@ -24,12 +24,15 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'amount', 'category', 'frequency', 'start_date', 'next_billing_date', 'is_active', 'created_at')
 
 class CreditSerializer(serializers.ModelSerializer):
+    skip_disbursement = serializers.BooleanField(write_only=True, required=False, default=False)
+
     class Meta:
         model = Credit
         fields = (
             'id', 'name', 'total_amount', 'remaining_amount', 'installment_amount',
             'total_installments', 'paid_installments', 'interest_rate', 'start_date',
-            'next_payment_date', 'category', 'is_active', 'created_at'
+            'next_payment_date', 'category', 'is_active', 'created_at',
+            'skip_disbursement'
         )
-        read_only_fields = ('remaining_amount', 'paid_installments', 'next_payment_date', 'is_active')
+        read_only_fields = ('remaining_amount', 'next_payment_date', 'is_active')
 

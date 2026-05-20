@@ -51,7 +51,10 @@ export default function Subscriptions() {
     total_installments: '12',
     interest_rate: '0',
     start_date: new Date().toISOString().split('T')[0],
-    category: 'otro'
+    category: 'otro',
+    is_advanced: false,
+    paid_installments: '0',
+    skip_disbursement: false
   });
 
   // Amortization details for preview
@@ -126,17 +129,34 @@ export default function Subscriptions() {
       const response = await api.post('/finance/credits/', data);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['credits'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+      
+      const isAdvanced = newCredit.is_advanced;
+      const skipDisb = newCredit.skip_disbursement;
+      
       toast({ 
-        title: '¡Crédito aprobado!', 
-        description: 'Se registró el crédito y se inyectó el desembolso en tus ingresos.', 
+        title: '¡Crédito registrado!', 
+        description: isAdvanced && skipDisb
+          ? 'Se registró el crédito en curso exitosamente omitiendo el desembolso inicial.'
+          : 'Se registró el crédito y se inyectó el desembolso en tus ingresos.', 
         variant: 'success' 
       });
       setShowAddCreditModal(false);
-      setNewCredit({ name: '', total_amount: '', installment_amount: '', total_installments: '12', interest_rate: '0', start_date: new Date().toISOString().split('T')[0], category: 'otro' });
+      setNewCredit({ 
+        name: '', 
+        total_amount: '', 
+        installment_amount: '', 
+        total_installments: '12', 
+        interest_rate: '0', 
+        start_date: new Date().toISOString().split('T')[0], 
+        category: 'otro',
+        is_advanced: false,
+        paid_installments: '0',
+        skip_disbursement: false
+      });
     },
     onError: () => toast({ title: 'Error', description: 'No se pudo registrar el crédito.', variant: 'error' })
   });
@@ -190,7 +210,31 @@ export default function Subscriptions() {
     if (!newCredit.name || !newCredit.total_amount || !newCredit.start_date || !newCredit.total_installments) {
       return toast({ title: 'Error', description: 'Completa todos los campos obligatorios.', variant: 'error' });
     }
-    addCreditMutation.mutate(newCredit);
+    
+    const totalInstallments = parseInt(newCredit.total_installments) || 0;
+    const paidInstallments = newCredit.is_advanced ? (parseInt(newCredit.paid_installments) || 0) : 0;
+    
+    if (paidInstallments > totalInstallments) {
+      return toast({ 
+        title: 'Error de validación', 
+        description: 'Las cuotas pagadas no pueden ser mayores a las cuotas totales.', 
+        variant: 'error' 
+      });
+    }
+
+    const payload = {
+      name: newCredit.name,
+      total_amount: newCredit.total_amount,
+      installment_amount: newCredit.installment_amount,
+      total_installments: totalInstallments,
+      interest_rate: newCredit.interest_rate,
+      start_date: newCredit.start_date,
+      category: newCredit.category,
+      paid_installments: paidInstallments,
+      skip_disbursement: newCredit.is_advanced ? newCredit.skip_disbursement : false
+    };
+
+    addCreditMutation.mutate(payload);
   };
 
   const getFreqLabel = (freq) => {
@@ -649,6 +693,50 @@ export default function Subscriptions() {
                 onChange={e => setNewCredit(p => ({ ...p, start_date: e.target.value }))}
                 className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm bg-slate-50 focus:bg-white font-semibold transition-colors" />
             </div>
+            
+            {/* Registro Avanzado Toggle */}
+            <div className="pt-2 border-t border-slate-100">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input 
+                  type="checkbox" 
+                  checked={newCredit.is_advanced}
+                  onChange={e => setNewCredit(p => ({ ...p, is_advanced: e.target.checked }))}
+                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                />
+                <span className="text-sm font-bold text-slate-700">¿Este crédito ya está en curso? (Registro Avanzado)</span>
+              </label>
+            </div>
+
+            {/* Campos de Registro Avanzado */}
+            {newCredit.is_advanced && (
+              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200/50 animate-fade-in">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Cuotas ya pagadas</label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    max={newCredit.total_installments}
+                    value={newCredit.paid_installments}
+                    onChange={e => setNewCredit(p => ({ ...p, paid_installments: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-xs font-bold bg-white transition-colors" 
+                  />
+                </div>
+                <div className="flex flex-col justify-center">
+                  <label className="flex items-center gap-2 cursor-pointer select-none mt-2">
+                    <input 
+                      type="checkbox" 
+                      checked={newCredit.skip_disbursement}
+                      onChange={e => setNewCredit(p => ({ ...p, skip_disbursement: e.target.checked }))}
+                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
+                    />
+                    <span className="text-xs font-semibold text-slate-600">Omitir desembolso inicial</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block leading-tight">
+                    Evita que se sume el total prestado a tu saldo actual.
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* --- SIMULATOR PANEL --- */}
             {parseFloat(newCredit.total_amount) > 0 && (
@@ -662,19 +750,48 @@ export default function Subscriptions() {
                     <span className="text-lg font-black text-emerald-600">{formatCurrency(previewCuota)}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-semibold block">Total a Pagar (Plazo)</span>
-                    <span className="text-sm font-bold text-slate-800">{formatCurrency(previewTotalPagar)}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-semibold block">Costo de Intereses</span>
-                    <span className={`text-xs font-bold ${previewIntereses > 0 ? 'text-rose-500' : 'text-emerald-600'}`}>
-                      {previewIntereses > 0 ? `+${formatCurrency(previewIntereses)}` : '¡Gratis sin interés!'}
+                    <span className="text-[10px] text-slate-400 font-semibold block">
+                      {newCredit.is_advanced ? 'Deuda Inicial Estimada' : 'Total a Pagar (Plazo)'}
+                    </span>
+                    <span className="text-sm font-bold text-slate-800">
+                      {formatCurrency(
+                        newCredit.is_advanced 
+                          ? Math.max(0, previewCuota * (parseInt(newCredit.total_installments || 0) - parseInt(newCredit.paid_installments || 0)))
+                          : previewTotalPagar
+                      )}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-semibold block">Próximo Vencimiento</span>
+                    <span className="text-[10px] text-slate-400 font-semibold block">
+                      {newCredit.is_advanced ? 'Cuotas Restantes' : 'Costo de Intereses'}
+                    </span>
+                    {newCredit.is_advanced ? (
+                      <span className="text-xs font-bold text-slate-800">
+                        {Math.max(0, parseInt(newCredit.total_installments || 0) - parseInt(newCredit.paid_installments || 0))} de {newCredit.total_installments}
+                      </span>
+                    ) : (
+                      <span className={`text-xs font-bold ${previewIntereses > 0 ? 'text-rose-500' : 'text-emerald-600'}`}>
+                        {previewIntereses > 0 ? `+${formatCurrency(previewIntereses)}` : '¡Gratis sin interés!'}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-semibold block">
+                      {newCredit.is_advanced && (parseInt(newCredit.paid_installments || 0) >= parseInt(newCredit.total_installments || 0)) 
+                        ? 'Estado Final' 
+                        : 'Próximo Vencimiento'}
+                    </span>
                     <span className="text-xs font-bold text-slate-500">
-                      {formatDate(add_months(new Date(newCredit.start_date), 1).toISOString().split('T')[0])}
+                      {newCredit.is_advanced && (parseInt(newCredit.paid_installments || 0) >= parseInt(newCredit.total_installments || 0)) ? (
+                        <span className="text-slate-400 italic">Crédito ya finalizado</span>
+                      ) : (
+                        formatDate(
+                          add_months(
+                            new Date(newCredit.start_date), 
+                            newCredit.is_advanced ? (parseInt(newCredit.paid_installments || 0) + 1) : 1
+                          ).toISOString().split('T')[0]
+                        )
+                      )}
                     </span>
                   </div>
                 </div>
