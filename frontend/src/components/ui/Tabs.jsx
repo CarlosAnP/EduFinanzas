@@ -40,7 +40,11 @@ export function TabsTrigger({ value, children, active, setActive, className = ''
   const isActive = active === value;
   return (
     <button
-      onClick={() => setActive?.(value)}
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        setActive?.(value);
+      }}
       className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 cursor-pointer
         ${isActive ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'} ${className}`}
     >

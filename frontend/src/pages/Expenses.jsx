@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import api from '../api/axios';
 import {
   Plus, Target, AlertTriangle, ArrowUpRight, ArrowDownRight, Search,
@@ -53,7 +53,7 @@ export default function Expenses() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const { data: transactionsData, isLoading: isLoadingTx } = useQuery({
+  const { data: transactionsData, isLoading: isLoadingTx, isFetching: isFetchingTx } = useQuery({
     queryKey: ['transactions', currentPage, activeTab, debouncedSearch],
     queryFn: async () => {
       const res = await api.get('/finance/transactions/', {
@@ -64,7 +64,8 @@ export default function Expenses() {
         }
       });
       return res.data;
-    }
+    },
+    placeholderData: keepPreviousData
   });
 
   const transactions = transactionsData?.results || [];
@@ -339,7 +340,7 @@ export default function Expenses() {
                 {['all', 'expense', 'income'].map(tab => (
                   <TabsContent key={tab} value={tab} active={active}>
                     <div className="overflow-x-auto">
-                      <Table className="min-w-[600px]">
+                      <Table className={`min-w-[600px] transition-opacity duration-200 ${isFetchingTx ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
                         <TableHeader>
                           <TableRow className="border-b-2 border-slate-100">
                             <TableHead className="py-4 text-slate-400 uppercase text-[11px] font-bold tracking-wider">Descripción</TableHead>
