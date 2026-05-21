@@ -3,7 +3,7 @@ services:
     name: edufinanzas-backend
     env: python
     buildCommand: "./build.sh"
-    startCommand: "gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
+    startCommand: "gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --timeout 90"
     rootDir: backend
     envVars:
       - key: DATABASE_URL
