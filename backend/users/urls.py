@@ -1,17 +1,18 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     RegisterView, UserProfileView,
     OnboardingProfileView, NotificationListView, ContactMessageCreateView,
     AdminUserListView, AdminMessageListView, ping_view, SelfPromoteAdminView,
     MarkNotificationReadView, MarkAllNotificationsReadView, ChangePasswordView,
-    PasswordResetRequestView, PasswordResetConfirmView
+    PasswordResetRequestView, PasswordResetConfirmView, CustomTokenObtainPairView, AccountActivateView
 )
 
 urlpatterns = [
     # Auth
     path('auth/register/', RegisterView.as_view(), name='register'),
-    path('auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('auth/login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('auth/activate/', AccountActivateView.as_view(), name='account_activate'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/password-reset/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     path('auth/password-reset-confirm/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),

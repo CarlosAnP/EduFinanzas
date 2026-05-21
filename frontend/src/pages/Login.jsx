@@ -20,6 +20,7 @@ import api from '../api/axios';
 const Login = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isRequestingReset, setIsRequestingReset] = useState(false);
+  const [isWaitingVerification, setIsWaitingVerification] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -39,8 +40,8 @@ const Login = () => {
       toast({ title: '¡Bienvenido de nuevo!', variant: 'success' });
       navigate('/app');
     },
-    onError: () => {
-      setError('Credenciales inválidas o correo no registrado.');
+    onError: (err) => {
+      setError(err.response?.data?.detail || 'Credenciales inválidas o correo no registrado.');
     }
   });
 
@@ -50,10 +51,12 @@ const Login = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      localStorage.setItem('access_token', data.access);
-      localStorage.setItem('refresh_token', data.refresh);
-      toast({ title: '¡Cuenta creada exitosamente!', variant: 'success' });
-      navigate('/onboarding');
+      toast({ 
+        title: '¡Registro exitoso!', 
+        description: 'Por favor, revisa tu correo institucional para activar tu cuenta.', 
+        variant: 'success' 
+      });
+      setIsWaitingVerification(true);
     },
     onError: (err) => {
       if (err.response?.data?.email) {
@@ -257,8 +260,8 @@ const Login = () => {
           <div className="absolute top-0 right-0 w-24 h-24 bg-brand-yellow/5 rounded-full blur-xl" />
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl" />
 
-          {/* Form Top Slider (Pill Tab Switcher) - Oculto si estamos pidiendo reset */}
-          {!isRequestingReset && (
+          {/* Form Top Slider (Pill Tab Switcher) - Oculto si estamos pidiendo reset o esperando verificación */}
+          {!isRequestingReset && !isWaitingVerification && (
             <div className="flex bg-slate-100/80 backdrop-blur-sm p-1 rounded-2xl mb-8 relative border border-slate-200/30">
               <button
                 type="button"
@@ -287,8 +290,38 @@ const Login = () => {
             </div>
           )}
 
-          {/* Render 1: SOLICITAR RECUPERACIÓN DE CONTRASEÑA */}
-          {isRequestingReset ? (
+          {/* Render 1: ESPERANDO VERIFICACIÓN DE CUENTA */}
+          {isWaitingVerification ? (
+            <div className="animate-fade-in text-center py-6">
+              <div className="w-20 h-20 mx-auto rounded-full bg-blue-50 text-brand-blue flex items-center justify-center shrink-0 border border-blue-100 shadow-lg shadow-blue-500/10 mb-6 animate-pulse">
+                <Mail size={36} className="stroke-[1.5]" />
+              </div>
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight leading-tight mb-3">
+                ¡Activa tu cuenta!
+              </h2>
+              <p className="text-slate-600 text-sm font-medium leading-relaxed max-w-sm mx-auto mb-8">
+                Hemos enviado un enlace de verificación a tu correo institucional <strong className="text-brand-blue font-bold">{email}</strong>.
+              </p>
+              <div className="bg-blue-50/60 border border-blue-100/70 rounded-2xl p-4 text-blue-800 text-[11px] font-semibold leading-relaxed mb-8 text-left">
+                <span className="font-bold text-brand-blue">Importante:</span> El enlace es de un solo uso. Si no encuentras el correo en unos minutos, por favor revisa tu carpeta de <strong>spam</strong> o correo no deseado.
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsWaitingVerification(false);
+                  setIsRegistering(false);
+                  setEmail('');
+                  setPassword('');
+                  setFirstName('');
+                  setLastName('');
+                  setError('');
+                }}
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-3.5 rounded-2xl font-black text-sm shadow-md transition-all active:scale-[0.98] cursor-pointer"
+              >
+                Volver al inicio de sesión
+              </button>
+            </div>
+          ) : isRequestingReset ? (
             <div className="animate-fade-in">
               {/* Header Title */}
               <div className="mb-8">
