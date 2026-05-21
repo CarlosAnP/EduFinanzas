@@ -19,16 +19,6 @@ services:
       - key: FRONTEND_URL
         value: "https://edu-finanzas-beta.vercel.app"
 
-  - type: web
-    name: edufinanzas-frontend
-    env: static
-    buildCommand: "npm install && npm run build"
-    staticPublishPath: "./dist"
-    rootDir: frontend
-    envVars:
-      - key: VITE_API_URL
-        value: "https://edufinanzas.onrender.com/api"
-
 databases:
   - name: edufinanzas-db
     databaseName: edufinanzas
