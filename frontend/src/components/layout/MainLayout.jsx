@@ -88,7 +88,7 @@ export default function MainLayout() {
       <div className="relative">
         <button
           onClick={() => setShowNotifications(!showNotifications)}
-          className={`relative p-2 rounded-xl transition-all duration-200 cursor-pointer text-slate-400 hover:text-slate-600 hover:bg-slate-100 ${
+          className={`relative p-2 rounded-xl transition-all duration-300 cursor-pointer text-slate-400 hover:text-slate-600 hover:bg-slate-100/80 ${
             showNotifications ? 'bg-slate-100 text-slate-600' : ''
           }`}
           title="Notificaciones"
@@ -110,17 +110,17 @@ export default function MainLayout() {
             />
             
             {/* Popover Card */}
-            <div className={`absolute z-50 w-80 bg-white/95 backdrop-blur-md border border-slate-200/85 rounded-2xl p-4 shadow-2xl animate-fade-in text-left ${
+            <div className={`absolute z-50 w-85 bg-white/90 backdrop-blur-xl border border-slate-200/60 rounded-[2rem] p-4.5 shadow-2xl shadow-slate-900/10 animate-fade-in text-left ${
               isMobile 
-                ? 'top-12 right-0' 
-                : 'top-12 -left-2'
+                ? 'top-14 right-[-40px] md:right-0' 
+                : 'top-14 -left-2'
             }`}>
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
                 <div className="flex items-center gap-1.5">
                   <span className="font-extrabold text-slate-800 text-sm">Notificaciones</span>
                   {unreadCount > 0 && (
-                    <span className="bg-blue-50 text-brand-blue text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                      {unreadCount} pnd
+                    <span className="bg-blue-50/80 text-brand-blue text-[10px] font-black px-2 py-0.5 rounded-full border border-blue-100/50">
+                      {unreadCount}
                     </span>
                   )}
                 </div>
@@ -160,9 +160,9 @@ export default function MainLayout() {
                             markReadMutation.mutate(n.id);
                           }
                         }}
-                        className={`p-3 rounded-xl border text-left transition-all duration-200 relative group ${
+                        className={`p-3 rounded-2xl border text-left transition-all duration-300 relative group overflow-hidden ${
                           !n.is_read 
-                            ? 'bg-blue-50/40 border-blue-100/70 hover:bg-blue-50/70 cursor-pointer' 
+                            ? 'bg-gradient-to-br from-blue-50/50 to-indigo-50/20 border-blue-100/70 hover:from-blue-50/70 hover:to-indigo-50/40 cursor-pointer shadow-sm hover:shadow' 
                             : 'bg-slate-50/50 border-slate-100 hover:bg-slate-50'
                         }`}
                       >
@@ -228,15 +228,15 @@ export default function MainLayout() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col fixed h-full z-30">
-        <div className="p-6 pb-4 border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-brand-blue rounded-xl flex items-center justify-center shadow-md">
+      <aside className="hidden md:flex w-64 bg-white/80 backdrop-blur-md border-r border-slate-200/50 shadow-xl flex-col fixed h-full z-30">
+        <div className="p-6 pb-4 border-b border-slate-100/60">
+          <div className="flex items-center gap-3 group">
+            <div className="w-10 h-10 bg-gradient-to-tr from-brand-blue to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/10 hover:scale-105 transition-all duration-300 cursor-pointer">
               <TrendingUp size={20} className="text-white" />
             </div>
             <div className="flex-1">
-              <h1 className="text-lg font-bold text-slate-800 tracking-tight">EduFinanzas</h1>
-              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Smart Money</p>
+              <h1 className="text-lg font-black text-slate-800 tracking-tight transition-colors duration-200 group-hover:text-brand-blue">EduFinanzas</h1>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Smart Pedagogy</p>
             </div>
             {renderNotificationBell(false)}
           </div>
@@ -246,126 +246,160 @@ export default function MainLayout() {
         <div className="px-4 py-4">
           <Link 
             to="/app/profile" 
-            className="block bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-3 border border-slate-200/60 hover:border-blue-200 hover:shadow-md transition-all duration-200 group cursor-pointer"
+            className="block bg-gradient-to-br from-white to-slate-50 border border-slate-200/60 rounded-2xl p-3.5 shadow-sm hover:border-blue-300 hover:shadow-md hover:shadow-blue-500/5 hover:-translate-y-0.5 transition-all duration-300 group cursor-pointer"
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-blue-100 group-hover:bg-brand-blue group-hover:text-white rounded-full flex items-center justify-center text-brand-blue font-bold text-sm transition-all duration-200">
+              <div className="w-10 h-10 bg-gradient-to-tr from-blue-50 to-indigo-100 group-hover:from-brand-blue group-hover:to-blue-600 group-hover:text-white rounded-full flex items-center justify-center text-brand-blue font-black text-sm border-2 border-white shadow-sm transition-all duration-300">
                 {initial1}{initial2}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-slate-700 truncate group-hover:text-brand-blue transition-colors">{user.first_name || 'Usuario'}</p>
-                <p className="text-[10px] text-slate-400 truncate">{user.career || 'Estudiante'}</p>
+                <p className="text-sm font-black text-slate-800 truncate group-hover:text-brand-blue transition-colors duration-200">{user.first_name || 'Usuario'}</p>
+                <p className="text-[10px] text-slate-400 font-bold truncate">{user.career || 'Estudiante'}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 mt-3 pt-2 border-t border-slate-200/60">
-              <div className="flex items-center gap-1 text-xs text-amber-600">
-                <Flame size={12} />
-                <span className="font-semibold">{user.streak}d</span>
+            <div className="grid grid-cols-2 gap-2 mt-3.5 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-center gap-1 text-[11px] text-amber-600 bg-amber-50/70 border border-amber-100/50 px-2 py-1 rounded-full font-bold shadow-sm">
+                <Flame size={12} className="fill-amber-500 text-amber-500 animate-pulse" />
+                <span>{user.streak}d racha</span>
               </div>
-              <div className="flex items-center gap-1 text-xs text-violet-600">
-                <Star size={12} />
-                <span className="font-semibold">{user.points} pts</span>
+              <div className="flex items-center justify-center gap-1 text-[11px] text-violet-600 bg-violet-50/70 border border-violet-100/50 px-2 py-1 rounded-full font-bold shadow-sm">
+                <Star size={12} className="fill-violet-500 text-violet-500" />
+                <span>{user.points} pts</span>
               </div>
             </div>
             
             {/* Badges Section */}
             {user.badges && user.badges.length > 0 && (
-              <div className="mt-3 pt-2 border-t border-slate-200/60 flex flex-wrap gap-1">
-                {user.badges.map(b => {
+              <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap gap-1.5 justify-center">
+                {user.badges.slice(0, 4).map(b => {
                   const badgeInfo = b.badge;
                   return (
                     <div 
                       key={b.id} 
-                      className="p-1 rounded bg-amber-100 border border-amber-200 flex items-center justify-center cursor-help"
+                      className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center cursor-help hover:scale-110 hover:rotate-6 transition-all duration-300 shadow-sm"
                       title={`${badgeInfo.name}: ${badgeInfo.description}`}
                     >
-                      <Star size={14} className="text-amber-500 fill-amber-500" />
+                      <Star size={13} className="text-amber-500 fill-amber-500" />
                     </div>
                   );
                 })}
+                {user.badges.length > 4 && (
+                  <div 
+                    className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-[9px] font-black text-slate-500"
+                    title="Ver más insignias en tu perfil"
+                  >
+                    +{user.badges.length - 4}
+                  </div>
+                )}
               </div>
             )}
           </Link>
         </div>
 
         {/* Nav Links */}
-        <nav className="flex-1 px-3 space-y-1">
+        <nav className="flex-1 px-3.5 py-1 space-y-1.5 overflow-y-auto scrollbar-thin">
           {navItems.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
               end={to === '/app'}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
+                `group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 relative overflow-hidden
                 ${isActive
-                  ? 'bg-blue-50 text-brand-blue shadow-sm shadow-blue-100'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50/40 text-brand-blue border-l-4 border-brand-blue shadow-[0_4px_12px_rgba(30,58,138,0.03)] scale-[1.01]'
+                  : 'text-slate-500 hover:bg-slate-50/70 hover:text-slate-800 hover:translate-x-1'
                 }`
               }
             >
-              <Icon size={20} />
-              <span>{label}</span>
+              {({ isActive }) => (
+                <>
+                  <Icon 
+                    size={18} 
+                    className={`transition-all duration-300 
+                      ${isActive 
+                        ? 'text-brand-blue scale-110 rotate-3' 
+                        : 'text-slate-400 group-hover:text-slate-700 group-hover:scale-115 group-hover:-rotate-3'
+                      }`} 
+                  />
+                  <span className="relative z-10">{label}</span>
+                  {isActive && (
+                    <div className="absolute right-3 w-1.5 h-1.5 bg-brand-blue rounded-full shadow-[0_0_8px_rgba(30,58,138,0.5)] animate-pulse" />
+                  )}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
 
         {/* Logout */}
-        <div className="p-4 border-t border-slate-100">
-          <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-2.5 w-full rounded-xl text-sm font-medium text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition cursor-pointer">
-            <LogOut size={18} />
+        <div className="p-4 border-t border-slate-100/60 bg-white/30 backdrop-blur-md">
+          <button 
+            onClick={handleLogout} 
+            className="group flex items-center gap-3 px-4 py-2.5 w-full rounded-xl text-sm font-semibold text-slate-400 hover:text-rose-600 hover:bg-rose-50/50 border border-transparent hover:border-rose-100/30 transition-all duration-300 cursor-pointer"
+          >
+            <LogOut size={18} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:scale-110" />
             <span>Cerrar Sesión</span>
           </button>
         </div>
       </aside>
 
       {/* Mobile Header */}
-      <header className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
+      <header className="md:hidden bg-white/85 backdrop-blur-md border-b border-slate-200/40 px-4 py-2.5 flex items-center justify-between sticky top-0 z-40 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center">
+          <div className="w-8.5 h-8.5 bg-gradient-to-tr from-brand-blue to-blue-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-900/10">
             <TrendingUp size={16} className="text-white" />
           </div>
-          <span className="font-bold text-slate-800">EduFinanzas</span>
+          <span className="font-extrabold text-slate-800 text-base tracking-tight">EduFinanzas</span>
         </div>
         <div className="flex items-center gap-2">
           {renderNotificationBell(true)}
-          <button onClick={handleLogout} className="text-slate-400 p-1 mr-1">
-            <LogOut size={16} />
-          </button>
-          <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-            <Flame size={12} /><span className="font-semibold">{user.streak}</span>
+          
+          <div className="flex items-center gap-1 text-[11px] font-bold text-amber-600 bg-amber-50/80 border border-amber-100/50 px-2.5 py-1 rounded-full">
+            <Flame size={12} className="fill-amber-500 text-amber-500" />
+            <span>{user.streak}d</span>
           </div>
+          
           <Link 
             to="/app/profile" 
-            className="w-8 h-8 bg-blue-100 hover:bg-brand-blue hover:text-white rounded-full flex items-center justify-center text-brand-blue font-bold text-xs shadow-inner cursor-pointer transition-all duration-200"
+            className="w-8.5 h-8.5 bg-gradient-to-tr from-blue-50 to-indigo-100 hover:from-brand-blue hover:to-blue-600 hover:text-white rounded-full flex items-center justify-center text-brand-blue font-black text-xs border border-white shadow-sm cursor-pointer transition-all duration-300"
           >
-            {initial1}
+            {initial1}{initial2}
           </Link>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-64 pb-20 md:pb-8">
+      <main className="flex-1 md:ml-64 pb-24 md:pb-8">
         <div className="p-4 md:p-8">
           <Outlet context={{ user }} />
         </div>
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 flex justify-around py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.06)]">
-        {navItems.map(({ to, icon: Icon, label }) => {
-          const isActive = to === '/app' ? location.pathname === '/app' : location.pathname.startsWith(to);
-          return (
-            <NavLink
-              key={to}
-              to={to}
-              className={`flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-colors
-                ${isActive ? 'text-brand-blue' : 'text-slate-400'}`}
-            >
-              <Icon size={22} />
-              <span className="text-[10px] font-medium">{label}</span>
-            </NavLink>
-          );
-        })}
+      <nav className="md:hidden fixed bottom-3 left-3 right-3 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200/55 flex justify-around py-2.5 z-30 shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
+        {navItems.map(({ to, icon: Icon, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === '/app'}
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center relative py-1 px-2 rounded-xl transition-all duration-300 group
+              ${isActive ? 'text-brand-blue scale-105' : 'text-slate-400 hover:text-slate-600'}`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <Icon size={19} className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
+                <span className={`text-[8.5px] tracking-tight font-black transition-all mt-0.5 ${isActive ? 'text-brand-blue font-black' : 'text-slate-400 font-medium'}`}>
+                  {label}
+                </span>
+                {isActive && (
+                  <span className="absolute -bottom-1.5 w-1.5 h-1.5 bg-brand-blue rounded-full shadow-[0_0_8px_rgba(30,58,138,0.6)] animate-pulse" />
+                )}
+              </>
+            )}
+          </NavLink>
+        ))}
       </nav>
 
       {/* Floating Tip of the Day Widget */}
