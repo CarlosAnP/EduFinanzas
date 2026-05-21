@@ -8,9 +8,22 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  // No enviar tokens de autenticación en endpoints públicos para evitar errores 401 si el token local ha expirado
+  const publicEndpoints = [
+    '/users/auth/login/',
+    '/users/auth/register/',
+    '/users/auth/password-reset/',
+    '/users/auth/password-reset-confirm/',
+    '/users/auth/activate/'
+  ];
+
+  const isPublic = publicEndpoints.some(endpoint => config.url && config.url.includes(endpoint));
+
+  if (!isPublic) {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
