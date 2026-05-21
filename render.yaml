@@ -3,7 +3,7 @@ services:
     name: edufinanzas-backend
     env: python
     buildCommand: "./build.sh"
-    startCommand: "gunicorn core.wsgi:application
+    startCommand: "gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"
     rootDir: backend
     envVars:
       - key: DATABASE_URL
@@ -27,7 +27,7 @@ services:
     rootDir: frontend
     envVars:
       - key: VITE_API_URL
-        value: "https://edu-finanzas-beta.vercel.app/api"
+        value: "https://edufinanzas.onrender.com/api"
 
 databases:
   - name: edufinanzas-db
