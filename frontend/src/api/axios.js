@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const isDebug = import.meta.env.VITE_DEBUG === 'false' || import.meta.env.DEV;
-const baseURL = 'https://edufinanzas.onrender.com/api';
+const baseURL = 'https://edu-finanzas-beta.vercel.app/api';
 
 const api = axios.create({
   baseURL,
