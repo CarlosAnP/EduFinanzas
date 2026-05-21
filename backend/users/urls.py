@@ -4,7 +4,8 @@ from .views import (
     RegisterView, UserProfileView,
     OnboardingProfileView, NotificationListView, ContactMessageCreateView,
     AdminUserListView, AdminMessageListView, ping_view, SelfPromoteAdminView,
-    MarkNotificationReadView, MarkAllNotificationsReadView, ChangePasswordView
+    MarkNotificationReadView, MarkAllNotificationsReadView, ChangePasswordView,
+    PasswordResetRequestView, PasswordResetConfirmView
 )
 
 urlpatterns = [
@@ -12,6 +13,8 @@ urlpatterns = [
     path('auth/register/', RegisterView.as_view(), name='register'),
     path('auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('auth/password-reset/', PasswordResetRequestView.as_view(), name='password_reset_request'),
+    path('auth/password-reset-confirm/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     
     # Profile & Features
     path('profile/', UserProfileView.as_view(), name='profile'),

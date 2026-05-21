@@ -14,6 +14,7 @@ import SimEmergency from './pages/simulators/SimEmergency';
 import SimBudget from './pages/simulators/SimBudget';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import Onboarding from './pages/Onboarding';
 import NotFound from './pages/NotFound';
 import Subscriptions from './pages/Subscriptions';
@@ -44,6 +45,7 @@ function App() {
             
             {/* Auth */}
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/onboarding" element={<Onboarding />} />
             
             {/* App Tools Layout */}
